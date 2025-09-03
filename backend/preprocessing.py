@@ -1,6 +1,8 @@
 import pandas as pd
 import os
 import re
+
+# ---------------- Load Dataset ---------------- #
 def load_dataset():
     """
     Loads dataset.csv from the data folder.
@@ -25,18 +27,35 @@ def load_dataset():
 
     print("✅ Dataset Loaded! Shape:", df.shape)
     return df
+
+# ---------------- Stopwords List ---------------- #
+STOPWORDS = {
+    "the", "is", "and", "a", "an", "in", "on", "at", "of", "to", "for", 
+    "by", "with", "that", "this", "it", "as", "are", "was", "were", 
+    "be", "been", "from", "or", "not", "but", "if", "then", "so", 
+    "there", "here", "what", "which", "when", "where", "who", "whom"
+}
+
+# ---------------- Tokenize Function ---------------- #
 def tokenize(text):
     """
-    Splits text into lowercase tokens (words).
-    Removes punctuation.
+    Splits text into lowercase tokens (words) and removes punctuation.
     """
     if not isinstance(text, str):
         return []
     text = text.lower()
-    text = re.sub(r'[^a-z0-9\s]', ' ', text)
+    text = re.sub(r'[^a-z0-9\s]', ' ', text)  # remove punctuation
     tokens = text.split()
     return tokens
 
+# ---------------- Remove Stopwords ---------------- #
+def remove_stopwords(tokens):
+    """
+    Removes common stopwords from a list of tokens.
+    """
+    return [word for word in tokens if word not in STOPWORDS]
+
+# ---------------- Tokenize All Columns ---------------- #
 def tokenize_all_columns(df):
     """
     Tokenizes all text columns in the DataFrame.
@@ -49,7 +68,8 @@ def tokenize_all_columns(df):
         row_tokens = []
         for col in df.columns:
             tokens = tokenize(row[col])
-            row_tokens.append(tokens)   # keep each column's tokens separate
+            tokens = remove_stopwords(tokens)  # remove stopwords here
+            row_tokens.append(tokens)
         tokenized_rows.append(row_tokens)
 
     df["tokens"] = tokenized_rows
