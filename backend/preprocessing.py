@@ -40,7 +40,8 @@ def tokenize(text):
 def tokenize_all_columns(df):
     """
     Tokenizes all text columns in the DataFrame.
-    Returns a new column 'tokens' which combines tokens from all columns.
+    Returns a new column 'tokens' where each row contains
+    a list of sublists (one sublist per column).
     """
     tokenized_rows = []
 
@@ -48,7 +49,7 @@ def tokenize_all_columns(df):
         row_tokens = []
         for col in df.columns:
             tokens = tokenize(row[col])
-            row_tokens.extend(tokens)
+            row_tokens.append(tokens)   # keep each column's tokens separate
         tokenized_rows.append(row_tokens)
 
     df["tokens"] = tokenized_rows
