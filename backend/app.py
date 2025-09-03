@@ -1,4 +1,4 @@
-from preprocessing import load_dataset
+from preprocessing import load_dataset, tokenize_all_columns
 
 if __name__ == "__main__":
     print("Starting Search Engine pipeline...")
@@ -6,4 +6,8 @@ if __name__ == "__main__":
     df = load_dataset()
     
     print("\nFirst 5 rows of dataset:")
-    print(df.head())
+
+    df = tokenize_all_columns(df)
+
+    print("\nFirst 5 rows with tokens:")
+    print(df[["tokens"]].head())
