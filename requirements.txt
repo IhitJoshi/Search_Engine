@@ -1,0 +1,12 @@
+# 1. Clone the repository
+git clone https://github.com/IhitJoshi/Search_Engine.git
+cd YOUR_REPO
+
+# 2. Install all required dependencies
+pip install -r requirements.txt
+
+# 3. Download the spaCy English model
+python -m spacy download en_core_web_sm
+
+# 4. Run your script
+python app.py
