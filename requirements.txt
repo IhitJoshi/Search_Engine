@@ -10,3 +10,7 @@ python -m spacy download en_core_web_sm
 
 # 4. Run your script
 python app.py
+
+# 5. For flask & start frontend
+pip install flask flask-cors
+start live server
