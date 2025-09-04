@@ -15,12 +15,15 @@ def load_dataset():
     Loads dataset.csv from the data folder.
     Returns: pandas DataFrame
     """
+    # Path to the dataset file
     base_dir = os.path.dirname(os.path.abspath(__file__))  
     data_path = os.path.join(base_dir, "..", "data", "dataset.csv")
 
+    # Debug info
     print("Loading dataset from:", data_path)
     print("File size:", os.path.getsize(data_path), "bytes")
 
+    # Try reading with common delimiters
     try:
         df = pd.read_csv(data_path)
     except pd.errors.ParserError:
@@ -80,8 +83,7 @@ def tokenize_all_columns(df):
         row_tokens = []
         for col in df.columns:
             tokens = tokenize(row[col])
-            tokens = remove_stopwords(tokens)
-            tokens = lemmatize_tokens(tokens)
+            tokens = remove_stopwords(tokens)  # remove stopwords here
             row_tokens.append(tokens)
         tokenized_rows.append(row_tokens)
 
