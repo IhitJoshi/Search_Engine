@@ -3,19 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Signup</title>
+    <title>SearchPro - Create Account</title>
     <link rel="stylesheet" href="styles/login_signup.css">
 </head>
 <body>
-    <h2>Sign Up</h2>
-  <form id="signup-form">
-    <input type="text" id="username" placeholder="Username" required><br>
-    <input type="email" id="email" placeholder="Email" required><br>
-    <input type="password" id="password" placeholder="Password" required><br>
-    <button type="submit">Sign Up</button>
-  </form>
-  <p>Already have an account? <a href="login.html">Login</a></p>
+    <div class="bg-animation">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
 
-  <script src="scripts/signup.js"></script>
+    <div class="container signup-container">
+        <div class="logo">
+            <h1>SearchPro</h1>
+            <p>Your gateway to intelligent search</p>
+        </div>
+
+        <div class="page-title">
+            <h2>Create Your Account</h2>
+            <p>Join thousands of users discovering smarter search</p>
+        </div>
+
+        <form id="signup-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <input type="text" class="form-input" id="first-name" placeholder="First Name" required>
+                    <span class="input-icon">👤</span>
+                </div>
+                <div class="form-group">
+                    <input type="text" class="form-input" id="last-name" placeholder="Last Name" required>
+                    <span class="input-icon">👤</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <input type="text" class="form-input" id="username" placeholder="Username" required>
+                <span class="input-icon">@</span>
+            </div>
+
+            <div class="form-group">
+                <input type="email" class="form-input" id="email" placeholder="Email Address" required>
+                <span class="input-icon">📧</span>
+            </div>
+
+            <div class="form-group">
+                <input type="password" class="form-input" id="password" placeholder="Create Password" required>
+                <span class="input-icon">🔒</span>
+                <div class="password-strength">
+                    <div class="strength-bar">
+                        <div class="strength-fill" id="strength-fill"></div>
+                    </div>
+                    <span id="strength-text">Password strength</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <input type="password" class="form-input" id="confirm-password" placeholder="Confirm Password" required>
+                <span class="input-icon">🔒</span>
+            </div>
+
+            <div class="terms-checkbox">
+                <input type="checkbox" id="terms" required>
+                <label for="terms">
+                    I agree to the <a href="#" target="_blank">Terms of Service</a> and 
+                    <a href="#" target="_blank">Privacy Policy</a>
+                </label>
+            </div>
+
+            <button type="submit" class="btn" id="signup-btn">Create Account</button>
+
+            <div class="form-footer">
+                <p>Already have an account? <a href="login.html">Sign in here</a></p>
+            </div>
+        </form>
+
+        <div id="message-container"></div>
+    </div>
+
+    <script src="scripts/signup.js"></script>
 </body>
 </html>
