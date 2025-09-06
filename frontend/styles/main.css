@@ -3,6 +3,99 @@
     padding: 0;
     box-sizing: border-box;
 }
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #2c3e50;
+  color: white;
+  padding: 0.8rem 1.2rem;
+}
+
+.top-bar .logo {
+  font-size: 1.2rem;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.navbar {
+  background-color:#263f57; /* Dark navbar background */
+  padding: 0.8rem 2rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.navbar ul {
+  display: flex;
+  gap: 2rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+}
+
+.navbar ul li a {
+  color: white;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  position: relative;
+  padding: 0.5rem 0;
+  transition: all 0.3s ease;
+}
+
+.navbar ul li a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 0%;
+  height: 2px;
+  background-color: #f39c12;
+  transition: width 0.3s ease;
+}
+
+.navbar ul li a:hover {
+  color: #f39c12;
+}
+
+.navbar ul li a:hover::after {
+  width: 100%;
+}
+
+/* Optional: Active link styling */
+.navbar ul li a.active {
+  color: #f39c12;
+}
+
+.navbar ul li a.active::after {
+  width: 100%;
+}
+
+
+.top-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.icon-btn {
+  color: white;
+  font-size: 1.1rem;
+  transition: color 0.3s;
+}
+
+.icon-btn:hover {
+  color: #f39c12;
+}
+
+.header {
+  background: linear-gradient(135deg, #3498db, #2c3e50);
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -186,4 +279,60 @@ body {
     #search-btn {
         padding: 0.8rem;
     }
+}
+/* Quick Options Section */
+.quick-options {
+    margin: 2rem 0;
+    text-align: center;
+}
+
+.quick-options h3 {
+    margin-bottom: 1.2rem;
+    color: #2c3e50;
+    font-size: 1.4rem;
+    font-weight: bold;
+}
+
+.options-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* Always 4 items per row */
+    gap: 1.5rem;
+    max-width: 1000px;  /* adjust as needed */
+    margin: 0 auto;
+}
+
+
+.option-card {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 1.5rem 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.option-card i {
+    font-size: 1.5rem;
+    color: #3498db;
+}
+
+.option-card span {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #333;
+}
+
+.option-card:hover {
+    background: #3498db;
+    color: white;
+    transform: translateY(-4px);
+}
+
+.option-card:hover i {
+    color: white;
 }

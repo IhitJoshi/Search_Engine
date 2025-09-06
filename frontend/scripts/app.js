@@ -4,7 +4,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const resultsContainer = document.getElementById('results');
     const statsContainer = document.getElementById('stats');
     const loadingElement = document.getElementById('loading');
-    
+    const quickOptions = document.getElementById('quick-options');
+
     // Focus on search input when page loads
     searchInput.focus();
     
@@ -17,46 +18,69 @@ document.addEventListener('DOMContentLoaded', function() {
             performSearch();
         }
     });
-    
+    // Quick option cards: click -> fill query -> search
+document.querySelectorAll('.option-card').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const q = btn.dataset.query || '';
+    searchInput.value = q;
+    performSearch();
+  });
+});
+    function showHome() {
+  // show options, reset stats, restore welcome
+  quickOptions.classList.remove('hidden');
+  statsContainer.classList.add('hidden');
+  resultsContainer.innerHTML = `
+    <div class="welcome-message">
+      <i class="fas fa-search fa-3x"></i>
+      <h2>Search Engine</h2>
+      <p>Enter a query above to find relevant documents</p>
+    </div>
+  `;
+}
+
+
     function performSearch() {
-        const query = searchInput.value.trim();
-        
-        if (query === '') {
-            showNotification('Please enter a search query', 'error');
-            return;
-        }
-        
-        // Show loading state
-        loadingElement.classList.remove('hidden');
-        resultsContainer.innerHTML = '';
-        statsContainer.classList.add('hidden');
-        
-        // Send search request to backend
-        fetch('http://localhost:5000/search', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify({ query: query })
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            displayResults(data, query);
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showNotification('Error performing search. Please try again later.', 'error');
-        })
-        .finally(() => {
-            loadingElement.classList.add('hidden');
-        });
-    }
+  const query = searchInput.value.trim();
+
+  // If empty -> go back to home state
+  if (query === '') {
+    showNotification('Please enter a search query', 'error');
+    showHome();
+    return;
+  }
+
+  // Hide options when searching / showing results
+  quickOptions.classList.add('hidden');
+
+  // Show loading state
+  loadingElement.classList.remove('hidden');
+  resultsContainer.innerHTML = '';
+  statsContainer.classList.add('hidden');
+
+  // Send search request to backend
+  fetch('http://localhost:5000/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ query })
+  })
+  .then(response => {
+      if (!response.ok) throw new Error('Network response was not ok');
+      return response.json();
+  })
+  .then(data => {
+      displayResults(data, query);
+  })
+  .catch(error => {
+      console.error('Error:', error);
+      showNotification('Error performing search. Please try again later.', 'error');
+  })
+  .finally(() => {
+      loadingElement.classList.add('hidden');
+  });
+}
+
     
     function displayResults(data, query) {
         // Clear previous results
@@ -136,3 +160,5 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 3000);
     }
 });
+// Initial state on first load
+showHome();

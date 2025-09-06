@@ -9,7 +9,26 @@
 </head>
 <body>
     <div class="container">
-        <header class="header">
+        <!-- Top Bar with logo, navbar, and actions -->
+<div class="top-bar">
+    <h1 class="logo">
+        <i class="fas fa-search"></i> SearchEngine
+    </h1>
+    <div class="top-actions">
+        <a href="profile.html" class="icon-btn"><i class="fas fa-user"></i></a>
+        <a href="#" class="icon-btn"><i class="fas fa-bars"></i></a>
+    </div>
+</div>
+<nav class="navbar">
+        <ul>
+            <li><a href="#">Bookmarks</a></li>
+            <li><a href="#">Search</a></li>
+            <li><a href="#">Categories</a></li>
+            <li><a href="login.html">Login</a></li>
+        </ul>
+    </nav>
+<!-- Header with only search box -->
+        <header class="header"> 
             <h1 class="logo">
                 <i class="fas fa-search"></i> SearchEngine
             </h1>
@@ -24,6 +43,45 @@
         </header>
 
         <main class="main-content">
+            <!-- Quick Options / Categories -->
+<section id="quick-options" class="quick-options">
+  <h3>Explore Categories</h3>
+  <div class="options-grid">
+    <button class="option-card" data-query="rice">
+      <i class="fa-solid fa-seedling"></i>
+      <span>Rice</span>
+    </button>
+    <button class="option-card" data-query="wheat">
+      <i class="fa-solid fa-wheat-awn"></i>
+      <span>Wheat</span>
+    </button>
+    <button class="option-card" data-query="maize">
+      <i class="fa-solid fa-leaf"></i>
+      <span>Maize</span>
+    </button>
+    <button class="option-card" data-query="soil health">
+      <i class="fa-solid fa-water"></i>
+      <span>Soil Health</span>
+    </button>
+    <button class="option-card" data-query="pests">
+      <i class="fa-solid fa-bug"></i>
+      <span>Pests</span>
+    </button>
+    <button class="option-card" data-query="market prices">
+      <i class="fa-solid fa-chart-line"></i>
+      <span>Market</span>
+    </button>
+    <button class="option-card" data-query="research">
+      <i class="fa-solid fa-microscope"></i>
+      <span>Research</span>
+    </button>
+    <button class="option-card" data-query="education">
+      <i class="fa-solid fa-graduation-cap"></i>
+      <span>Education</span>
+    </button>
+  </div>
+</section>
+
             <div id="loading" class="loading hidden">
                 <div class="spinner"></div>
                 <p>Searching...</p>
