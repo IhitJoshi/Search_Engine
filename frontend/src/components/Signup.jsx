@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
 
 const Signup = ({ onSignupSuccess, onNavigateToLogin }) => {
-  const [formData, setFormData] = useState({
-    username: '',
-    password: '',
-    confirmPassword: ''
-  });
+const [formData, setFormData] = useState({
+  username: '',
+  email: '',
+  password: '',
+  confirmPassword: ''
+});
+
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { username, password, confirmPassword } = formData;
+    const { username, email, password, confirmPassword } = formData;
 
-    if (!username || !password) {
+    if (!username || !email || !password) {
       setMessage({ text: 'Please fill in all fields.', type: 'error' });
       return;
     }
@@ -31,7 +33,7 @@ const Signup = ({ onSignupSuccess, onNavigateToLogin }) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/signup", {
+      const response = await fetch("http://localhost:5000/api/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -39,6 +41,7 @@ const Signup = ({ onSignupSuccess, onNavigateToLogin }) => {
         credentials: "include",
         body: JSON.stringify({ 
           username: username.trim(), 
+          email: email.trim(),
           password: password.trim() 
         })
       });
@@ -98,7 +101,20 @@ const Signup = ({ onSignupSuccess, onNavigateToLogin }) => {
             />
             <span className="absolute right-3 top-3 text-gray-400">👤</span>
           </div>
-          
+          <div className="relative">
+  <input 
+    type="email" 
+    name="email"
+    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent outline-none transition-all"
+    placeholder="Email"
+    value={formData.email || ''}
+    onChange={handleInputChange}
+    required
+    disabled={isLoading}
+  />
+  <span className="absolute right-3 top-3 text-gray-400">📧</span>
+</div>
+
           <div className="relative">
             <input 
               type="password" 

@@ -13,7 +13,7 @@ const App = () => {
 
   const checkAuth = async () => {
     try {
-      const response = await fetch("http://localhost:5000/check", {
+      const response = await fetch("http://localhost:5000/api/auth/check", {
         method: "GET",
         credentials: "include"
       });

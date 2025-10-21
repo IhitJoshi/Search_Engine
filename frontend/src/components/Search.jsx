@@ -7,7 +7,17 @@ const Search = ({ username, onLogout }) => {
   const [stats, setStats] = useState({ total: 0, time: 0, query: "" });
   const [showWelcome, setShowWelcome] = useState(true);
   const [message, setMessage] = useState({ text: "", type: "" });
+  const [stocks, setStocks] = useState([]); // 🟢 new state for stocks
 
+  useEffect(() => {
+    fetch("http://localhost:5000/api/stocks")
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("Live stocks:", data);
+        setStocks(data); // 🟢 store data
+      })
+      .catch((err) => console.error("Error fetching stocks:", err));
+  }, []);
 
   const performSearch = async () => {
     const query = searchQuery.trim();
@@ -22,7 +32,7 @@ const Search = ({ username, onLogout }) => {
     setSearchResults([]);
 
     try {
-      const response = await fetch("http://localhost:5000/search", {
+      const response = await fetch("http://localhost:5000/api/search", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -66,20 +76,9 @@ const Search = ({ username, onLogout }) => {
     });
   };
 
-  const handleQuickSearch = (query) => {
-    setSearchQuery(query);
-    setTimeout(() => performSearch(), 100);
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter") {
-      performSearch();
-    }
-  };
-
   const handleLogoutClick = async () => {
     try {
-      await fetch("http://localhost:5000/logout", {
+      await fetch("http://localhost:5000/api/logout", {
         method: "POST",
         credentials: "include",
       });
@@ -97,7 +96,7 @@ const Search = ({ username, onLogout }) => {
       {/* Top Bar */}
       <div className="bg-gray-900 text-white px-6 py-3 flex justify-between items-center border-b border-gray-700">
         <h1 className="text-xl font-semibold flex items-center gap-2">
-          <i className="fas fa-search"></i> SearchEngine
+          <i className="fas fa-chart-line"></i> Stock Dashboard
         </h1>
         <div className="flex gap-4 items-center">
           <span className="text-gray-300">Welcome, {username}</span>
@@ -110,134 +109,56 @@ const Search = ({ username, onLogout }) => {
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="bg-gray-800 px-6 py-3 border-b border-gray-700">
-        <ul className="flex gap-8 text-gray-300">
-          <li>
-            <button className="hover:text-white transition-colors">
-              Bookmarks
-            </button>
-          </li>
-          <li>
-            <button className="hover:text-white transition-colors">
-              Search
-            </button>
-          </li>
-          <li>
-            <button className="hover:text-white transition-colors">
-              Categories
-            </button>
-          </li>
-        </ul>
-      </nav>
-
-      {/* Header with Search */}
-      <header className="bg-gradient-to-br from-gray-700 to-gray-900 text-white py-12 px-4 border-b border-gray-600">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl font-bold mb-8 flex items-center justify-center gap-3">
-            <i className="fas fa-search"></i> SearchEngine
-          </h1>
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-white rounded-lg shadow-lg overflow-hidden flex">
-              <input
-                type="text"
-                className="flex-1 px-6 py-4 text-gray-900 outline-none"
-                placeholder="Enter your search query..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={handleKeyPress}
-              />
-              <button
-                onClick={performSearch}
-                className="bg-gray-700 hover:bg-gray-600 px-8 py-4 text-white font-semibold transition-colors"
-              >
-                <i className="fas fa-search"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
+      {/* Stock Dashboard Section */}
       <main className="max-w-7xl mx-auto py-8 px-4">
-    
-        {/* Loading */}
-        {isLoading && (
-          <div className="text-center py-12">
-            <div className="w-10 h-10 border-4 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Searching...</p>
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">
+          📈 Live Stock Market Overview
+        </h2>
+
+        {stocks.length === 0 ? (
+          <p className="text-gray-500">Loading latest stock data...</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {stocks.map((stock) => (
+              <div
+                key={stock.id}
+                className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all"
+              >
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-lg font-bold text-gray-800">
+                    {stock.company_name}
+                  </h3>
+                  <span
+                    className={`px-2 py-1 text-sm font-semibold rounded-full ${
+                      stock.change_percent >= 0
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
+                  >
+                    {stock.change_percent
+                      ? `${stock.change_percent.toFixed(2)}%`
+                      : "—"}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-500 mb-2">{stock.symbol}</p>
+                <p className="text-xl font-semibold text-gray-900 mb-2">
+                  ${stock.price.toFixed(2)}
+                </p>
+                <p className="text-sm text-gray-600 mb-2">
+                  Volume: {stock.volume.toLocaleString()}
+                </p>
+                <p className="text-sm text-gray-500">
+                  <span className="font-medium">Sector:</span> {stock.sector}
+                </p>
+              </div>
+            ))}
           </div>
         )}
-
-        {/* Stats */}
-        {stats.total > 0 && (
-          <div className="text-gray-600 text-lg mb-6">
-            Found {stats.total} results for "{stats.query}"
-          </div>
-        )}
-
-        {/* Results */}
-        <div className="space-y-6">
-          {showWelcome && !isLoading && (
-            <div className="text-center py-16">
-              <i className="fas fa-search text-6xl text-gray-400 mb-6"></i>
-              <h2 className="text-3xl font-bold text-gray-700 mb-4">
-                Search Engine
-              </h2>
-              <p className="text-gray-500 text-lg">
-                Enter a query above to find relevant documents
-              </p>
-            </div>
-          )}
-
-          {!showWelcome && searchResults.length === 0 && !isLoading && (
-            <div className="text-center py-16">
-              <i className="fas fa-search text-4xl text-gray-400 mb-4"></i>
-              <h3 className="text-2xl font-semibold text-gray-700 mb-2">
-                No results found for "{stats.query}"
-              </h3>
-              <p className="text-gray-500">
-                Try different keywords or more general terms
-              </p>
-            </div>
-          )}
-
-          {searchResults.map((result, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 transition-all duration-300 hover:shadow-md"
-            >
-              <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-100">
-                <span className="font-semibold text-blue-600">
-                  Document {result.doc_id}
-                </span>
-                <span className="bg-gray-700 text-white px-3 py-1 rounded-full text-sm font-medium">
-                  Score: {result.score?.toFixed(4)}
-                </span>
-              </div>
-              <div className="text-gray-700 leading-relaxed">
-                <p>{result.preview}</p>
-              </div>
-            </div>
-          ))}
-        </div>
       </main>
 
-      <footer class="fixed bottom-0 left-0 w-full bg-gray-800 text-gray-300 text-center py-6 border-t border-gray-700">
-        <p>Search Engine &copy; 2023 | Powered by Python & BM25</p>
+      <footer className="bg-gray-800 text-gray-300 text-center py-6 border-t border-gray-700">
+        <p>Stock Dashboard © 2025 | Powered by Python & React</p>
       </footer>
-
-      {message.text && (
-        <div
-          className={`fixed top-4 right-4 p-3 rounded-lg z-50 ${
-            message.type === "success"
-              ? "bg-green-100 text-green-700 border border-green-200"
-              : "bg-red-100 text-red-700 border border-red-200"
-          }`}
-        >
-          {message.text}
-        </div>
-      )}
     </div>
   );
 };

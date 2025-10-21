@@ -1,27 +1,4 @@
-"""
-Enhanced Flask API with better error handling and authentication
-"""
 
-from app import StockSearchApp
-
-# Initialize the main application
-try:
-    stock_app = StockSearchApp()
-    stock_app.initialize_databases()
-    stock_app.load_and_preprocess_data()
-    stock_app.initialize_search_engine()
-    logger.info("Stock Search Application initialized successfully")
-except Exception as e:
-    logger.error(f"Failed to initialize Stock Search Application: {e}")
-    # You might want to exit here or handle this appropriately
-
-# Then in your search endpoint, use:
-@app.route('/api/search', methods=['POST'])
-@require_auth()
-def search():
-    # Instead of using global df and search_engine
-    results = stock_app.search(query, top_n=10)
-    # ... rest of the function
 
 from flask import Flask, request, jsonify, session
 from flask_cors import CORS
@@ -29,6 +6,9 @@ import pandas as pd
 import hashlib
 import logging
 from typing import Dict, Any
+from app import StockSearchApp
+import threading
+import sqlite3
 
 from search import search_engine, preprocess_query
 from preprocessing import load_dataset, tokenize_all_columns
@@ -46,9 +26,21 @@ app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HT
 # CORS configuration
 CORS(app, 
      supports_credentials=True,
-     origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # Frontend URLs
+     origins=[
+    "http://localhost:5173",
+    "http://127.0.0.1:5173"
+],  # Frontend URLs
      allow_headers=["Content-Type", "Authorization"],
      methods=["GET", "POST", "PUT", "DELETE"])
+# Initialize StockSearchApp and run data fetcher in background
+stock_app = StockSearchApp()
+stock_app.initialize_system()
+
+def run_background_fetcher():
+    stock_app.stock_fetcher.run_continuous_fetch(["AAPL","MSFT","GOOG","AMZN","TSLA","NVDA","META","NFLX","AMD","INTC"], 60)
+
+# Run background fetcher in a separate thread
+threading.Thread(target=run_background_fetcher, daemon=True).start()
 
 # Initialize database
 init_db()
@@ -83,19 +75,21 @@ def require_auth():
     return decorator
 
 # Load and prepare data at startup
-@app.before_first_request
+@app.before_request
 def initialize_app():
     """Initialize application data"""
-    try:
-        logger.info("Loading dataset and building search index...")
-        global df
-        df = load_dataset()
-        df = tokenize_all_columns(df)
-        search_engine.build_index(df)
-        logger.info("Application initialized successfully")
-    except Exception as e:
-        logger.error(f"Failed to initialize application: {e}")
-        raise
+    if not hasattr(app, "_initialized"):
+        try:
+            logger.info("Loading dataset and building search index...")
+            global df
+            df = load_dataset()
+            df = tokenize_all_columns(df)
+            search_engine.build_index(df)
+            logger.info("Application initialized successfully")
+            app._initialized = True
+        except Exception as e:
+            logger.error(f"Failed to initialize application: {e}")
+            raise
 
 # Authentication routes
 @app.route("/api/signup", methods=["POST"])
@@ -103,6 +97,7 @@ def signup():
     """User registration endpoint"""
     try:
         data = request.get_json()
+        print("📩 Received signup data:", data)
         if not data:
             raise APIError("No JSON data provided")
             
@@ -265,6 +260,22 @@ def search():
     except Exception as e:
         logger.error(f"Search error: {e}")
         raise APIError("Search failed")
+@app.route("/api/stocks", methods=["GET"])
+def get_stocks():
+    """Return latest stock data"""
+    with stock_app.db_manager.get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT s1.* FROM stocks s1
+            JOIN (
+                SELECT symbol, MAX(last_updated) as latest 
+                FROM stocks 
+                GROUP BY symbol
+            ) s2 ON s1.symbol = s2.symbol AND s1.last_updated = s2.latest
+        ''')
+        rows = cursor.fetchall()
+        stocks = [dict(row) for row in rows]
+    return jsonify(stocks)
 
 @app.route('/api/health', methods=['GET'])
 def health_check():

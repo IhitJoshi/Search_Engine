@@ -63,3 +63,10 @@ def fetch_all(query: str, params: tuple = ()) -> list:
         cursor = conn.cursor()
         cursor.execute(query, params)
         return [dict(row) for row in cursor.fetchall()]
+import hashlib
+
+def hash_password(password: str) -> str:
+    """
+    Hash a password using SHA256 for secure storage.
+    """
+    return hashlib.sha256(password.encode('utf-8')).hexdigest()

@@ -455,8 +455,9 @@ def main():
             print("Invalid choice. Please enter 1, 2, or 3.")
 
 if __name__ == "__main__":
+    from flask import Flask
     try:
-        main()
-    except Exception as e:
-        logger.error(f"Application error: {e}")
-        print(f"Application error: {e}")
+        app.run(host="0.0.0.0", port=5000, debug=True)
+    except NameError:
+        print("Flask app instance not found — make sure `app = Flask(__name__)` exists in this file.")
+
