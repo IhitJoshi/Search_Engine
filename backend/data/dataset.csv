@@ -1,0 +1,11 @@
+company_name,symbol,sector,industry,description,country,market_cap_billions
+Apple Inc.,AAPL,Technology,Consumer Electronics,"Apple designs a wide variety of consumer electronic devices, including smartphones, personal computers, tablets, wearables, and accessories.",USA,2800
+Microsoft Corporation,MSFT,Technology,Software—Infrastructure,"Microsoft develops and licenses consumer and enterprise software, including Windows operating systems and Office productivity suite.",USA,2100
+Google LLC,GOOGL,Technology,Internet Content & Information,Google is the largest internet search engine and a dominant player in online advertising and cloud computing.,USA,1800
+Amazon.com Inc.,AMZN,Consumer Cyclical,Internet Retail,Amazon is a leading online retailer and cloud service provider with extensive e-commerce operations.,USA,1600
+Tesla Inc.,TSLA,Automotive,Auto Manufacturers,"Tesla designs and manufactures electric vehicles, energy storage systems, and solar panels.",USA,600
+NVIDIA Corporation,NVDA,Technology,Semiconductors,NVIDIA is a leading manufacturer of graphics processing units for gaming and professional markets.,USA,800
+Meta Platforms Inc.,META,Communication Services,Internet Content & Information,"Meta operates social networking platforms including Facebook, Instagram, and WhatsApp.",USA,900
+Netflix Inc.,NFLX,Communication Services,Entertainment,"Netflix provides streaming entertainment service with movies, TV shows, and original content.",USA,250
+Adobe Inc.,ADBE,Technology,Software—Infrastructure,"Adobe provides creative software products for design, photography, video editing, and web development.",USA,200
+Intel Corporation,INTC,Technology,Semiconductors,Intel designs and manufactures microprocessors and other semiconductor components for computing devices.,USA,150

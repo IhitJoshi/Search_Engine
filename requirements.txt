@@ -8,9 +8,12 @@ pip install -r requirements.txt
 # 3. Download the spaCy English model
 python -m spacy download en_core_web_sm
 
-# 4. Run your script
-python app.py
+# 4. Install yfinance
+pip install yfinance
 
-# 5. For flask & start frontend
+# 5. Run your script
+python api.py
+
+# 6. For flask & start frontend
 pip install flask flask-cors
 start live server

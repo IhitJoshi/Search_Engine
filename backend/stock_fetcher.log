@@ -1,0 +1,83 @@
+2025-10-21 12:39:34,106 - INFO - 
+============================================================
+2025-10-21 12:39:34,136 - INFO - ============================================================
+2025-10-21 12:39:34,137 - INFO - Initializing databases...
+2025-10-21 12:39:34,137 - INFO - Database initialized successfully
+2025-10-21 12:39:34,155 - INFO - Database 'stocks.db' initialized with 'stocks' table
+2025-10-21 12:39:34,156 - INFO - Loading and preprocessing dataset...
+2025-10-21 12:39:34,157 - INFO - Loading dataset from: C:\Users\joshi\OneDrive\Desktop\Search Engine\Search_Engine\backend\..\data\dataset.csv
+2025-10-21 12:39:34,157 - ERROR - Failed to load dataset: Dataset file not found: C:\Users\joshi\OneDrive\Desktop\Search Engine\Search_Engine\backend\..\data\dataset.csv
+2025-10-21 12:44:47,054 - INFO - ============================================================
+2025-10-21 12:44:47,054 - INFO - STOCK SEARCH ENGINE - APPLICATION STARTUP
+2025-10-21 12:44:47,054 - INFO - ============================================================
+2025-10-21 12:44:47,054 - INFO - Initializing databases...
+2025-10-21 12:44:47,055 - INFO - Database initialized successfully
+2025-10-21 12:44:47,055 - INFO - [SUCCESS] Users database initialized
+2025-10-21 12:44:47,058 - INFO - Database 'stocks.db' initialized with 'stocks' table
+2025-10-21 12:44:47,058 - INFO - [SUCCESS] Stocks database initialized
+2025-10-21 12:44:47,058 - INFO - Loading and preprocessing dataset...
+2025-10-21 12:44:47,058 - INFO - Loading dataset from: data\dataset.csv
+2025-10-21 12:44:47,082 - INFO - Successfully loaded dataset with delimiter ',' and encoding 'utf-8'
+2025-10-21 12:44:47,083 - INFO - Dataset shape: (10, 7)
+2025-10-21 12:44:47,083 - INFO - Dataset columns: ['company_name', 'symbol', 'sector', 'industry', 'description', 'country', 'market_cap_billions']
+2025-10-21 12:44:47,083 - INFO - First 3 rows of dataset:
+2025-10-21 12:44:47,084 - INFO -   company_name: ['Apple Inc.', 'Microsoft Corporation', 'Google LLC']
+2025-10-21 12:44:47,085 - INFO -   symbol: ['AAPL', 'MSFT', 'GOOGL']
+2025-10-21 12:44:47,085 - INFO -   sector: ['Technology', 'Technology', 'Technology']
+2025-10-21 12:44:47,085 - INFO -   industry: ['Consumer Electronics', 'Software—Infrastructure', 'Internet Content & Information']
+2025-10-21 12:44:47,085 - INFO -   description: ['Apple designs a wide variety of consumer electronic devices, including smartphones, personal computers, tablets, wearables, and accessories.', 'Microsoft develops and licenses consumer and enterprise software, including Windows operating systems and Office productivity suite.', 'Google is the largest internet search engine and a dominant player in online advertising and cloud computing.']
+2025-10-21 12:44:47,085 - INFO -   country: ['USA', 'USA', 'USA']
+2025-10-21 12:44:47,086 - INFO -   market_cap_billions: [2800, 2100, 1800]
+2025-10-21 12:44:47,086 - INFO - Tokenizing columns: ['company_name', 'symbol', 'sector', 'industry', 'description', 'country']
+2025-10-21 12:44:47,331 - INFO - Tokenization completed successfully
+2025-10-21 12:44:47,331 - INFO - Tokenization sample:
+2025-10-21 12:44:47,332 - INFO -   Document 0: ['apple', 'inc', 'aapl', 'technology', 'consumer', 'electronic', 'apple', 'design', 'wide', 'variety']...
+2025-10-21 12:44:47,332 - INFO -   Document 1: ['microsoft', 'corporation', 'msft', 'technology', 'software', 'infrastructure', 'microsoft', 'develop', 'license', 'consumer']...
+2025-10-21 12:44:47,332 - INFO - [SUCCESS] Dataset loaded and preprocessed successfully
+2025-10-21 12:44:47,332 - INFO - Initializing search engine...
+2025-10-21 12:44:47,332 - INFO - Building search index...
+2025-10-21 12:44:47,332 - INFO - Index built with 113 unique terms
+2025-10-21 12:44:47,332 - INFO - [SUCCESS] Search engine initialized successfully
+2025-10-21 12:44:47,332 - INFO - ==================================================
+2025-10-21 12:44:47,332 - INFO - APPLICATION INFORMATION
+2025-10-21 12:44:47,332 - INFO - ==================================================
+2025-10-21 12:44:47,332 - INFO -   status: ready
+2025-10-21 12:44:47,333 - INFO -   documents: 10
+2025-10-21 12:44:47,333 - INFO -   search_terms: 113
+2025-10-21 12:44:47,333 - INFO -   dataset_columns: ['company_name', 'symbol', 'sector', 'industry', 'description', 'country', 'market_cap_billions', 'tokens']
+2025-10-21 12:44:47,333 - INFO - ==================================================
+2025-10-21 12:44:47,333 - INFO - RUNNING TEST SEARCHES
+2025-10-21 12:44:47,333 - INFO - ==================================================
+2025-10-21 12:44:47,333 - INFO - Searching for: 'technology'
+2025-10-21 12:44:47,336 - INFO - Searching for: 'technology' -> tokens: ['technology']
+2025-10-21 12:44:47,337 - INFO - Query: 'technology' -> Found 3 results
+2025-10-21 12:44:47,337 - INFO -   1. Doc 5 (Score: 0.5687)
+2025-10-21 12:44:47,337 - INFO -      Preview: NVIDIA Corporation NVDA Technology Semiconductors NVIDIA is a leading manufacturer of graphics proce...
+2025-10-21 12:44:47,338 - INFO -   2. Doc 9 (Score: 0.5687)
+2025-10-21 12:44:47,338 - INFO -      Preview: Intel Corporation INTC Technology Semiconductors Intel designs and manufactures microprocessors and ...
+2025-10-21 12:44:47,338 - INFO -   3. Doc 8 (Score: 0.5261)
+2025-10-21 12:44:47,338 - INFO -      Preview: Adobe Inc. ADBE Technology Software—Infrastructure Adobe provides creative software products for des...
+2025-10-21 12:44:47,338 - INFO - Searching for: 'apple'
+2025-10-21 12:44:47,341 - INFO - Searching for: 'apple' -> tokens: ['apple']
+2025-10-21 12:44:47,341 - INFO - Query: 'apple' -> Found 1 results
+2025-10-21 12:44:47,342 - INFO -   1. Doc 0 (Score: 2.7016)
+2025-10-21 12:44:47,342 - INFO -      Preview: Apple Inc. AAPL Technology Consumer Electronics Apple designs a wide variety of consumer electronic ...
+2025-10-21 12:44:47,342 - INFO - Searching for: 'software'
+2025-10-21 12:44:47,346 - INFO - Searching for: 'software' -> tokens: ['software']
+2025-10-21 12:44:47,346 - INFO - Query: 'software' -> Found 2 results
+2025-10-21 12:44:47,347 - INFO -   1. Doc 8 (Score: 2.1166)
+2025-10-21 12:44:47,347 - INFO -      Preview: Adobe Inc. ADBE Technology Software—Infrastructure Adobe provides creative software products for des...
+2025-10-21 12:44:47,348 - INFO -   2. Doc 1 (Score: 2.0436)
+2025-10-21 12:44:47,348 - INFO -      Preview: Microsoft Corporation MSFT Technology Software—Infrastructure Microsoft develops and licenses consum...
+2025-10-21 12:44:47,348 - INFO - Searching for: 'internet'
+2025-10-21 12:44:47,352 - INFO - Searching for: 'internet' -> tokens: ['internet']
+2025-10-21 12:44:47,352 - INFO - Query: 'internet' -> Found 3 results
+2025-10-21 12:44:47,353 - INFO -   1. Doc 2 (Score: 1.6072)
+2025-10-21 12:44:47,353 - INFO -      Preview: Google LLC GOOGL Technology Internet Content & Information Google is the largest internet search eng...
+2025-10-21 12:44:47,354 - INFO -   2. Doc 3 (Score: 1.1172)
+2025-10-21 12:44:47,354 - INFO -      Preview: Amazon.com Inc. AMZN Consumer Cyclical Internet Retail Amazon is a leading online retailer and cloud...
+2025-10-21 12:44:47,354 - INFO -   3. Doc 6 (Score: 1.1172)
+2025-10-21 12:44:47,354 - INFO -      Preview: Meta Platforms Inc. META Communication Services Internet Content & Information Meta operates social ...
+2025-10-21 12:44:47,355 - INFO - ============================================================
+2025-10-21 12:44:47,355 - INFO - [SUCCESS] APPLICATION STARTUP COMPLETED
+2025-10-21 12:44:47,355 - INFO - ============================================================

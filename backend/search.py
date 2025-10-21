@@ -1,88 +1,181 @@
+"""
+Enhanced BM25 search implementation with better scoring and performance
+"""
+
 import math
-import re
-import spacy
+import logging
+from typing import List, Tuple, Dict, Any
+from preprocessing import preprocess_text
 import pandas as pd
-from preprocessing import tokenize, remove_stopwords, lemmatize_tokens
-from index import build_inverted_index
-from app import load_dataset, tokenize_all_columns
 
-# ---------------- Load spaCy ---------------- #
-nlp = spacy.load("en_core_web_sm")
+logger = logging.getLogger(__name__)
 
-# ---------------- Preprocess Query ---------------- #
-def preprocess_query(query):
-    tokens = tokenize(query)
-    tokens = remove_stopwords(tokens)
-    tokens = lemmatize_tokens(tokens)
-    return tokens
-
-# ---------------- BM25 IDF ---------------- #
-def compute_idf(inverted_index, N):
+class BM25Search:
     """
-    Compute IDF for all tokens.
-    Returns: dict {token: idf value}
+    BM25 search implementation with configurable parameters
     """
-    idf = {}
-    for term, docs in inverted_index.items():
-        df = len(set(docs))  # document frequency
-        idf[term] = math.log((N - df + 0.5) / (df + 0.5) + 1)
-    return idf
+    
+    def __init__(self, k1: float = 1.5, b: float = 0.75, epsilon: float = 0.25):
+        self.k1 = k1
+        self.b = b
+        self.epsilon = epsilon
+        self.inverted_index = None
+        self.doc_lengths = None
+        self.avg_doc_length = None
+        self.idf_cache = {}
+        
+    def compute_idf(self, term: str, total_docs: int) -> float:
+        """
+        Compute IDF for a term with smoothing
+        """
+        if term in self.idf_cache:
+            return self.idf_cache[term]
+            
+        if term not in self.inverted_index:
+            return 0.0
+            
+        doc_freq = len(set(self.inverted_index[term]))
+        
+        # BM25 IDF formula with smoothing
+        idf = math.log(
+            (total_docs - doc_freq + 0.5) / 
+            (doc_freq + 0.5) + 1.0
+        )
+        
+        self.idf_cache[term] = idf
+        return idf
+    
+    def compute_scores(self, query_tokens: List[str], df: pd.DataFrame) -> List[Tuple[int, float]]:
+        """
+        Compute BM25 scores for all documents
+        """
+        if not self.inverted_index or not self.doc_lengths:
+            raise ValueError("Index not initialized. Call build_index first.")
+        
+        total_docs = len(df)
+        scores = {}
+        
+        for doc_idx, doc_length in enumerate(self.doc_lengths):
+            score = 0.0
+            doc_tokens = df.iloc[doc_idx]["tokens"]
+            
+            for term in query_tokens:
+                if term not in self.inverted_index or doc_idx not in self.inverted_index[term]:
+                    continue
+                    
+                # Term frequency in this document
+                tf = doc_tokens.count(term)
+                if tf == 0:
+                    continue
+                
+                # IDF
+                idf = self.compute_idf(term, total_docs)
+                
+                # BM25 scoring
+                numerator = tf * (self.k1 + 1)
+                denominator = tf + self.k1 * (1 - self.b + self.b * (doc_length / self.avg_doc_length))
+                
+                score += idf * (numerator / denominator)
+            
+            if score > 0:
+                scores[doc_idx] = score
+        
+        return sorted(scores.items(), key=lambda x: x[1], reverse=True)
+    
+    def build_index(self, df: pd.DataFrame):
+        """
+        Build search index from DataFrame
+        """
+        logger.info("Building search index...")
+        
+        self.inverted_index = {}
+        self.doc_lengths = []
+        
+        # Build inverted index and compute document lengths
+        for doc_idx, tokens in enumerate(df["tokens"]):
+            self.doc_lengths.append(len(tokens))
+            
+            for token in set(tokens):  # Use set to avoid duplicate processing
+                if token not in self.inverted_index:
+                    self.inverted_index[token] = []
+                self.inverted_index[token].append(doc_idx)
+        
+        # Compute average document length
+        self.avg_doc_length = sum(self.doc_lengths) / len(self.doc_lengths) if self.doc_lengths else 0
+        self.idf_cache = {}  # Clear cache
+        
+        logger.info(f"Index built with {len(self.inverted_index)} unique terms")
+    
+    def search(self, query: str, df: pd.DataFrame, top_n: int = 10) -> List[Tuple[int, float]]:
+        """
+        Search for documents matching the query
+        """
+        query_tokens = preprocess_text(query)
+        logger.info(f"Searching for: '{query}' -> tokens: {query_tokens}")
+        
+        if not query_tokens:
+            return []
+        
+        results = self.compute_scores(query_tokens, df)
+        return results[:top_n]
 
-# ---------------- BM25 Search ---------------- #
-def bm25_search(query_tokens, df, inverted_index, k=1.5, b=0.75, top_n=5):
-    N = len(df)  # total documents
-    idf = compute_idf(inverted_index, N)
+# Global search instance
+search_engine = BM25Search()
 
-    # Precompute doc lengths
-    doc_lengths = [sum(len(col_tokens) for col_tokens in row) for row in df["tokens"]]
-    avgdl = sum(doc_lengths) / N
+def preprocess_query(query: str) -> List[str]:
+    """
+    Preprocess search query
+    """
+    return preprocess_text(query)
 
-    scores = {}
+def bm25_search(query_tokens: List[str], df: pd.DataFrame, inverted_index: Dict, 
+                k: float = 1.5, b: float = 0.75, top_n: int = 5) -> List[Tuple[int, float]]:
+    """
+    Legacy function for backward compatibility
+    """
+    search_engine.k1 = k
+    search_engine.b = b
+    search_engine.inverted_index = inverted_index
+    search_engine.doc_lengths = [len(tokens) for tokens in df["tokens"]]
+    search_engine.avg_doc_length = sum(search_engine.doc_lengths) / len(search_engine.doc_lengths)
+    
+    query = " ".join(query_tokens)
+    return search_engine.search(query, df, top_n)
 
-    for idx, token_lists in enumerate(df["tokens"]):
-        doc_tokens = [t for sublist in token_lists for t in sublist]
-        doc_len = len(doc_tokens)
+def main():
+    """Test the search functionality"""
+    from preprocessing import load_dataset, tokenize_all_columns
+    
+    logging.basicConfig(level=logging.INFO)
+    
+    print("🔎 Testing Search Engine...")
+    
+    try:
+        df = load_dataset()
+        df = tokenize_all_columns(df)
+        
+        search_engine.build_index(df)
+        
+        while True:
+            query = input("\nEnter your query (or 'exit' to quit): ")
+            if query.lower() == 'exit':
+                break
+                
+            results = search_engine.search(query, df, top_n=5)
+            
+            if not results:
+                print("No results found ❌")
+            else:
+                print(f"\nTop {len(results)} Results:")
+                for idx, (doc_idx, score) in enumerate(results, 1):
+                    print(f"{idx}. Doc {doc_idx} | Score: {score:.4f}")
+                    # Show preview of the document
+                    preview = " ".join(str(df.iloc[doc_idx][col]) for col in df.columns if col != 'tokens')
+                    print(f"   Preview: {preview[:100]}...\n")
+                    
+    except Exception as e:
+        logger.error(f"Search test failed: {e}")
+        raise
 
-        score = 0.0
-        for term in query_tokens:
-            tf = doc_tokens.count(term)
-            if tf == 0 or term not in idf:
-                continue
-
-            numerator = tf * (k + 1)
-            denominator = tf + k * (1 - b + b * (doc_len / avgdl))
-            score += idf[term] * (numerator / denominator)
-
-        if score > 0:
-            scores[idx] = score
-
-    # Sort by score
-    ranked = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_n]
-
-    return ranked
-
-# ---------------- Main ---------------- #
 if __name__ == "__main__":
-    print("🔎 Starting Search Engine...")
-
-    df = load_dataset()
-    df = tokenize_all_columns(df)
-    inverted_index = build_inverted_index(df)
-
-    while True:
-        query = input("\nEnter your query (or 'exit' to quit): ")
-        if query.lower() == "exit":
-            break
-
-        query_tokens = preprocess_query(query)
-        print("Processed Query Tokens:", query_tokens)
-
-        results = bm25_search(query_tokens, df, inverted_index, top_n=5)
-
-        if not results:
-            print("No results found ❌")
-        else:
-            print("\nTop Results:")
-            for idx, score in results:
-                print(f"Doc {idx} | Score: {score:.4f}")
-                print(df.iloc[idx], "\n")
+    main()
