@@ -1,23 +1,23 @@
 """
 Main Application Entry Point - Stock Search Engine
-Coordinates data loading, indexing, and serves as the main orchestrator
+Handles everything: database setup, stock fetching, search engine
 """
 
 import logging
 import sys
 import os
-from typing import Optional, Dict, Any
+import sqlite3
+import time
+import yfinance as yf
 import pandas as pd
-
-from preprocessing import load_dataset, tokenize_all_columns
-from search import BM25Search
-from stock_fetcher import create_table as create_stocks_table
-from database import init_db as init_users_db
+from datetime import datetime
+from typing import Optional, Dict, Any, List
+from contextlib import contextmanager
 
 # Setup logging with ASCII-only characters for Windows compatibility
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(sys.stdout),
         logging.FileHandler('app.log', encoding='utf-8')
@@ -25,241 +25,438 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Configuration
+STOCK_SYMBOLS = ["AAPL", "MSFT", "GOOG", "AMZN", "TSLA", "NVDA", "META", "NFLX", "AMD", "INTC"]
+UPDATE_INTERVAL = 60  # seconds
+
+class DatabaseManager:
+    """Handles all database operations"""
+    
+    def __init__(self, db_name="stocks.db"):
+        self.db_name = db_name
+    
+    @contextmanager
+    def get_connection(self):
+        """Context manager for database connections"""
+        conn = sqlite3.connect(self.db_name)
+        conn.row_factory = sqlite3.Row
+        try:
+            yield conn
+        finally:
+            conn.close()
+    
+    def create_tables(self):
+        """Create all required tables with updated schema"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Drop and recreate stocks table to ensure latest schema
+            cursor.execute('DROP TABLE IF EXISTS stocks')
+            
+            cursor.execute('''
+                CREATE TABLE stocks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    symbol TEXT NOT NULL,
+                    company_name TEXT,
+                    sector TEXT,
+                    price REAL,
+                    volume INTEGER,
+                    change_percent REAL,
+                    summary TEXT,
+                    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(symbol, last_updated)
+                )
+            ''')
+            
+            # Create indexes for better performance
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_time ON stocks(symbol, last_updated)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_last_updated ON stocks(last_updated)')
+            
+            conn.commit()
+        logger.info("Database tables created with latest schema")
+
+class StockFetcher:
+    """Handles stock data fetching from Yahoo Finance"""
+    
+    def __init__(self, db_manager):
+        self.db_manager = db_manager
+    
+    def fetch_stock_data(self, symbol: str) -> Optional[Dict]:
+        """Fetch stock data for a given symbol"""
+        try:
+            stock = yf.Ticker(symbol)
+            info = stock.info
+            
+            # Get current price from multiple possible fields
+            current_price = (
+                info.get('currentPrice') or 
+                info.get('regularMarketPrice') or 
+                info.get('previousClose')
+            )
+            
+            # Calculate price change
+            previous_close = info.get('previousClose')
+            change_percent = (
+                ((current_price - previous_close) / previous_close * 100) 
+                if current_price and previous_close else None
+            )
+            
+            # Get current volume
+            current_volume = info.get('volume') or info.get('averageVolume')
+            
+            data = {
+                'symbol': symbol,
+                'company_name': info.get('longName', symbol),
+                'sector': info.get('sector', 'Unknown'),
+                'price': round(current_price, 2) if current_price else None,
+                'volume': current_volume,
+                'change_percent': round(change_percent, 2) if change_percent else None,
+                'summary': (info.get('longBusinessSummary') or 'No summary available')[:500],
+                'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+            
+            return data
+        
+        except Exception as e:
+            logger.error(f"Error fetching {symbol}: {str(e)}")
+            return None
+    
+    def update_database(self, stock_data: Dict):
+        """Update stock data in database"""
+        if not stock_data or stock_data.get('price') is None:
+            return
+        
+        try:
+            with self.db_manager.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    INSERT INTO stocks 
+                    (symbol, company_name, sector, price, volume, change_percent, summary, last_updated)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    stock_data['symbol'],
+                    stock_data['company_name'],
+                    stock_data['sector'],
+                    stock_data['price'],
+                    stock_data['volume'],
+                    stock_data['change_percent'],
+                    stock_data['summary'],
+                    stock_data['last_updated']
+                ))
+                conn.commit()
+                
+                # Log the update
+                timestamp = datetime.now().strftime('%H:%M:%S')
+                price_str = f"${stock_data['price']:.2f}"
+                change_str = f"{stock_data['change_percent']:+.2f}%" if stock_data['change_percent'] else "N/A"
+                logger.info(f"[{timestamp}] {stock_data['symbol']}: {price_str} ({change_str})")
+                
+        except sqlite3.Error as e:
+            logger.error(f"Database error for {stock_data['symbol']}: {str(e)}")
+    
+    def fetch_all_stocks(self, symbols: List[str]):
+        """Fetch data for all symbols"""
+        logger.info(f"Fetching data for {len(symbols)} stocks...")
+        
+        success_count = 0
+        for symbol in symbols:
+            stock_data = self.fetch_stock_data(symbol)
+            if stock_data:
+                self.update_database(stock_data)
+                success_count += 1
+            time.sleep(1)  # Rate limiting
+        
+        logger.info(f"Successfully updated {success_count}/{len(symbols)} stocks")
+    
+    def run_continuous_fetch(self, symbols: List[str], interval: int):
+        """Run continuous stock data fetching"""
+        logger.info("Starting continuous stock data fetch...")
+        logger.info(f"Tracking {len(symbols)} stocks")
+        logger.info(f"Update interval: {interval} seconds")
+        
+        error_count = 0
+        max_errors = 5
+        
+        while True:
+            try:
+                self.fetch_all_stocks(symbols)
+                error_count = 0  # Reset error count on success
+                logger.info(f"Waiting {interval} seconds until next update...")
+                time.sleep(interval)
+                
+            except KeyboardInterrupt:
+                logger.info("Stock fetcher stopped by user")
+                break
+            except Exception as e:
+                error_count += 1
+                logger.error(f"Unexpected error: {e}")
+                if error_count >= max_errors:
+                    logger.error("Too many consecutive errors, stopping...")
+                    break
+                time.sleep(interval * 2)  # Backoff on errors
+
+class SearchEngine:
+    """Handles search functionality"""
+    
+    def __init__(self):
+        self.df = None
+        self.inverted_index = None
+    
+    def load_stock_data(self, db_manager):
+        """Load stock data from database for searching"""
+        logger.info("Loading stock data for search engine...")
+        
+        try:
+            with db_manager.get_connection() as conn:
+                # Get the latest data for each symbol
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT s1.* FROM stocks s1
+                    JOIN (
+                        SELECT symbol, MAX(last_updated) as latest 
+                        FROM stocks 
+                        GROUP BY symbol
+                    ) s2 ON s1.symbol = s2.symbol AND s1.last_updated = s2.latest
+                ''')
+                
+                rows = cursor.fetchall()
+                stocks_data = [dict(row) for row in rows]
+                
+                if not stocks_data:
+                    logger.warning("No stock data found in database")
+                    return
+                
+                # Convert to DataFrame
+                self.df = pd.DataFrame(stocks_data)
+                logger.info(f"Loaded {len(self.df)} stocks for searching")
+                
+                # Preprocess for search
+                self._preprocess_data()
+                self._build_index()
+                
+        except Exception as e:
+            logger.error(f"Error loading stock data: {e}")
+            raise
+    
+    def _preprocess_data(self):
+        """Preprocess data for search"""
+        if self.df is None:
+            return
+        
+        # Combine searchable fields into one text field
+        self.df['search_text'] = (
+            self.df['symbol'].fillna('') + ' ' +
+            self.df['company_name'].fillna('') + ' ' +
+            self.df['sector'].fillna('') + ' ' +
+            self.df['summary'].fillna('')
+        )
+        
+        # Simple tokenization (you can enhance this)
+        self.df['tokens'] = self.df['search_text'].apply(
+            lambda x: [token.lower() for token in str(x).split() if len(token) > 2]
+        )
+    
+    def _build_index(self):
+        """Build simple inverted index"""
+        self.inverted_index = {}
+        
+        for doc_idx, tokens in enumerate(self.df['tokens']):
+            for token in set(tokens):  # Use set to avoid duplicates
+                if token not in self.inverted_index:
+                    self.inverted_index[token] = []
+                self.inverted_index[token].append(doc_idx)
+        
+        logger.info(f"Built index with {len(self.inverted_index)} unique terms")
+    
+    def search(self, query: str, top_n: int = 5):
+        """Simple search implementation"""
+        if self.df is None or self.inverted_index is None:
+            logger.error("Search engine not initialized")
+            return []
+        
+        query_tokens = [token.lower() for token in query.split() if len(token) > 2]
+        
+        # Simple TF-based scoring
+        scores = {}
+        for token in query_tokens:
+            if token in self.inverted_index:
+                for doc_idx in self.inverted_index[token]:
+                    scores[doc_idx] = scores.get(doc_idx, 0) + 1
+        
+        # Sort by score
+        results = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_n]
+        
+        # Format results
+        formatted_results = []
+        for doc_idx, score in results:
+            stock = self.df.iloc[doc_idx]
+            formatted_results.append({
+                'symbol': stock['symbol'],
+                'company_name': stock['company_name'],
+                'sector': stock['sector'],
+                'price': stock['price'],
+                'score': score,
+                'change_percent': stock.get('change_percent', 'N/A')
+            })
+        
+        return formatted_results
+
 class StockSearchApp:
     """
-    Main application class that orchestrates the stock search engine
+    Main application class that orchestrates everything
     """
     
     def __init__(self):
-        self.df: Optional[pd.DataFrame] = None
-        self.search_engine = BM25Search()
-        self.index_data: Optional[Dict[str, Any]] = None
-        
-    def initialize_databases(self):
-        """Initialize all required databases"""
-        logger.info("Initializing databases...")
-        try:
-            # Initialize users database
-            init_users_db()
-            logger.info("[SUCCESS] Users database initialized")
-            
-            # Initialize stocks database
-            create_stocks_table()
-            logger.info("[SUCCESS] Stocks database initialized")
-            
-        except Exception as e:
-            logger.error(f"Failed to initialize databases: {e}")
-            raise
+        self.db_manager = DatabaseManager()
+        self.stock_fetcher = StockFetcher(self.db_manager)
+        self.search_engine = SearchEngine()
     
-    def load_and_preprocess_data(self, dataset_path: str = None):
-        """
-        Load and preprocess the dataset
-        
-        Args:
-            dataset_path: Optional custom path to dataset file
-        """
-        logger.info("Loading and preprocessing dataset...")
+    def initialize_system(self):
+        """Initialize the entire system"""
+        logger.info("=" * 60)
+        logger.info("STOCK SEARCH ENGINE - INITIALIZING SYSTEM")
+        logger.info("=" * 60)
         
         try:
-            # If no path provided, try multiple possible locations
-            if dataset_path is None:
-                possible_paths = [
-                    os.path.join("data", "dataset.csv"),
-                    os.path.join("..", "data", "dataset.csv"),
-                    "dataset.csv",
-                    os.path.join(os.path.dirname(__file__), "..", "data", "dataset.csv")
-                ]
-                
-                for path in possible_paths:
-                    if os.path.exists(path):
-                        dataset_path = path
-                        break
-                else:
-                    # If no dataset found, create a sample one
-                    logger.warning("No dataset file found. Creating sample dataset...")
-                    self._create_sample_dataset()
-                    dataset_path = "sample_dataset.csv"
+            # Step 1: Setup database
+            logger.info("Step 1: Setting up database...")
+            self.db_manager.create_tables()
+            logger.info("[SUCCESS] Database setup completed")
             
-            # Load dataset
-            self.df = load_dataset(dataset_path)
+            # Step 2: Fetch initial stock data
+            logger.info("Step 2: Fetching initial stock data...")
+            self.stock_fetcher.fetch_all_stocks(STOCK_SYMBOLS)
+            logger.info("[SUCCESS] Initial stock data fetched")
             
-            # Show dataset info
-            logger.info(f"Dataset shape: {self.df.shape}")
-            logger.info(f"Dataset columns: {list(self.df.columns)}")
+            # Step 3: Initialize search engine
+            logger.info("Step 3: Initializing search engine...")
+            self.search_engine.load_stock_data(self.db_manager)
+            logger.info("[SUCCESS] Search engine initialized")
             
-            # Display sample data
-            if not self.df.empty:
-                logger.info("First 3 rows of dataset:")
-                for col in self.df.columns:
-                    if col != 'tokens':  # Don't show tokens in preview
-                        sample_values = self.df[col].head(3).tolist()
-                        logger.info(f"  {col}: {sample_values}")
+            # Step 4: Display system info
+            self._display_system_info()
             
-            # Tokenize all columns
-            self.df = tokenize_all_columns(self.df)
+            logger.info("=" * 60)
+            logger.info("[SUCCESS] SYSTEM INITIALIZATION COMPLETED")
+            logger.info("=" * 60)
             
-            # Show tokenization results
-            if 'tokens' in self.df.columns:
-                logger.info("Tokenization sample:")
-                for i, tokens in enumerate(self.df['tokens'].head(2)):
-                    logger.info(f"  Document {i}: {tokens[:10]}...")  # First 10 tokens
-            
-            logger.info("[SUCCESS] Dataset loaded and preprocessed successfully")
+            return True
             
         except Exception as e:
-            logger.error(f"Failed to load dataset: {e}")
-            raise
+            logger.error(f"[ERROR] System initialization failed: {e}")
+            return False
     
-    def _create_sample_dataset(self):
-        """Create a sample dataset for testing"""
-        sample_data = {
-            'company_name': [
-                'Apple Inc.', 
-                'Microsoft Corporation', 
-                'Google LLC',
-                'Amazon.com Inc.',
-                'Tesla Inc.'
-            ],
-            'symbol': ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA'],
-            'sector': ['Technology', 'Technology', 'Technology', 'Consumer Cyclical', 'Automotive'],
-            'industry': [
-                'Consumer Electronics', 
-                'Software—Infrastructure', 
-                'Internet Content & Information',
-                'Internet Retail',
-                'Auto Manufacturers'
-            ],
-            'description': [
-                'Apple designs a wide variety of consumer electronic devices, including smartphones, personal computers, tablets, wearables, and accessories.',
-                'Microsoft develops and licenses consumer and enterprise software, including Windows operating systems and Office productivity suite.',
-                'Google is the largest internet search engine and a dominant player in online advertising and cloud computing.',
-                'Amazon is a leading online retailer and cloud service provider with extensive e-commerce operations.',
-                'Tesla designs and manufactures electric vehicles, energy storage systems, and solar panels.'
-            ],
-            'country': ['USA', 'USA', 'USA', 'USA', 'USA']
-        }
+    def _display_system_info(self):
+        """Display system information"""
+        logger.info("=" * 50)
+        logger.info("SYSTEM INFORMATION")
+        logger.info("=" * 50)
         
-        df = pd.DataFrame(sample_data)
-        df.to_csv('sample_dataset.csv', index=False)
-        logger.info("Sample dataset created: sample_dataset.csv")
-    
-    def initialize_search_engine(self):
-        """Initialize the search engine with preprocessed data"""
-        logger.info("Initializing search engine...")
-        
-        if self.df is None:
-            raise ValueError("Data not loaded. Call load_and_preprocess_data() first.")
-        
-        try:
-            # Build search index directly from DataFrame
-            self.search_engine.build_index(self.df)
-            logger.info("[SUCCESS] Search engine initialized successfully")
+        if self.search_engine.df is not None:
+            logger.info(f"Stocks loaded: {len(self.search_engine.df)}")
+            logger.info(f"Search terms: {len(self.search_engine.inverted_index) if self.search_engine.inverted_index else 0}")
             
-        except Exception as e:
-            logger.error(f"Failed to initialize search engine: {e}")
-            raise
+            # Show sample of loaded stocks
+            logger.info("Sample stocks:")
+            for _, stock in self.search_engine.df.head(3).iterrows():
+                logger.info(f"  {stock['symbol']}: {stock['company_name']} - ${stock['price']}")
     
-    def search(self, query: str, top_n: int = 10):
-        """
-        Perform a search query
-        
-        Args:
-            query: Search query string
-            top_n: Number of top results to return
-            
-        Returns:
-            List of search results
-        """
-        if self.search_engine.inverted_index is None:
-            raise ValueError("Search engine not initialized")
-        
-        logger.info(f"Searching for: '{query}'")
-        return self.search_engine.search(query, self.df, top_n)
-    
-    def get_app_info(self) -> Dict[str, Any]:
-        """Get application information"""
-        return {
-            'status': 'ready' if self.df is not None else 'initializing',
-            'documents': len(self.df) if self.df is not None else 0,
-            'search_terms': len(self.search_engine.inverted_index) if self.search_engine.inverted_index else 0,
-            'dataset_columns': list(self.df.columns) if self.df is not None else []
-        }
-    
-    def run_test_search(self):
-        """Run test searches to verify functionality"""
-        if self.df is None or self.search_engine.inverted_index is None:
-            logger.warning("Cannot run test search - app not fully initialized")
+    def run_interactive_search(self):
+        """Run interactive search interface"""
+        if self.search_engine.df is None:
+            logger.error("Search engine not available. Please initialize system first.")
             return
         
-        test_queries = [
-            "technology",
-            "apple",
-            "software",
-            "internet"
-        ]
-        
+        logger.info("\n" + "=" * 50)
+        logger.info("INTERACTIVE SEARCH")
         logger.info("=" * 50)
-        logger.info("RUNNING TEST SEARCHES")
-        logger.info("=" * 50)
+        logger.info("Enter search queries to find stocks")
+        logger.info("Type 'exit' to quit, 'refresh' to update data")
         
-        for query in test_queries:
+        while True:
             try:
-                results = self.search(query, top_n=3)
-                logger.info(f"Query: '{query}' -> Found {len(results)} results")
+                query = input("\nEnter search query: ").strip()
                 
-                for i, (doc_idx, score) in enumerate(results, 1):
-                    # Create preview
-                    preview = ""
-                    for col in self.df.columns:
-                        if col != 'tokens' and pd.notna(self.df.iloc[doc_idx][col]):
-                            preview += str(self.df.iloc[doc_idx][col]) + " "
-                    preview = preview.strip()[:100] + "..." if len(preview) > 100 else preview
-                    
-                    logger.info(f"  {i}. Doc {doc_idx} (Score: {score:.4f})")
-                    logger.info(f"     Preview: {preview}")
-                    
+                if query.lower() == 'exit':
+                    break
+                elif query.lower() == 'refresh':
+                    logger.info("Refreshing stock data...")
+                    self.stock_fetcher.fetch_all_stocks(STOCK_SYMBOLS)
+                    self.search_engine.load_stock_data(self.db_manager)
+                    continue
+                elif not query:
+                    continue
+                
+                # Perform search
+                results = self.search_engine.search(query)
+                
+                if not results:
+                    logger.info("No results found for your query.")
+                else:
+                    logger.info(f"\nFound {len(results)} results:")
+                    for i, result in enumerate(results, 1):
+                        change_str = f"{result['change_percent']:+.2f}%" if result['change_percent'] != 'N/A' else 'N/A'
+                        logger.info(f"{i}. {result['symbol']} - {result['company_name']}")
+                        logger.info(f"   Sector: {result['sector']} | Price: ${result['price']} | Change: {change_str}")
+                        logger.info(f"   Score: {result['score']}")
+                        
+            except KeyboardInterrupt:
+                logger.info("\nSearch interrupted by user")
+                break
             except Exception as e:
-                logger.error(f"Test search failed for '{query}': {e}")
+                logger.error(f"Search error: {e}")
+    
+    def run_continuous_mode(self):
+        """Run in continuous mode (fetch + search)"""
+        logger.info("Starting continuous mode...")
+        logger.info("Stock data will be updated automatically")
+        logger.info("Press Ctrl+C to stop")
+        
+        try:
+            while True:
+                # Fetch new data
+                self.stock_fetcher.fetch_all_stocks(STOCK_SYMBOLS)
+                
+                # Reload search data
+                self.search_engine.load_stock_data(self.db_manager)
+                
+                # Wait for next update
+                time.sleep(UPDATE_INTERVAL)
+                
+        except KeyboardInterrupt:
+            logger.info("Continuous mode stopped by user")
 
 def main():
     """Main application entry point"""
-    logger.info("=" * 60)
-    logger.info("STOCK SEARCH ENGINE - APPLICATION STARTUP")
-    logger.info("=" * 60)
-    
     app = StockSearchApp()
     
-    try:
-        # Step 1: Initialize databases
-        app.initialize_databases()
+    # Initialize the system
+    if not app.initialize_system():
+        return
+    
+    # Ask user for mode
+    while True:
+        print("\n" + "=" * 50)
+        print("SELECT MODE:")
+        print("1. Interactive Search")
+        print("2. Continuous Stock Monitoring")
+        print("3. Exit")
         
-        # Step 2: Load and preprocess data
-        app.load_and_preprocess_data()
+        choice = input("Enter your choice (1-3): ").strip()
         
-        # Step 3: Initialize search engine
-        app.initialize_search_engine()
-        
-        # Step 4: Display application info
-        app_info = app.get_app_info()
-        logger.info("=" * 50)
-        logger.info("APPLICATION INFORMATION")
-        logger.info("=" * 50)
-        for key, value in app_info.items():
-            logger.info(f"  {key}: {value}")
-        
-        # Step 5: Run test searches
-        app.run_test_search()
-        
-        logger.info("=" * 60)
-        logger.info("[SUCCESS] APPLICATION STARTUP COMPLETED")
-        logger.info("=" * 60)
-        
-        return app
-        
-    except Exception as e:
-        logger.error(f"[ERROR] Application startup failed: {e}")
-        sys.exit(1)
+        if choice == '1':
+            app.run_interactive_search()
+        elif choice == '2':
+            app.run_continuous_mode()
+        elif choice == '3':
+            logger.info("Thank you for using Stock Search Engine!")
+            break
+        else:
+            print("Invalid choice. Please enter 1, 2, or 3.")
 
 if __name__ == "__main__":
-    # Run the application
-    main()
+    try:
+        main()
+    except Exception as e:
+        logger.error(f"Application error: {e}")
+        print(f"Application error: {e}")

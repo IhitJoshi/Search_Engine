@@ -81,3 +81,175 @@
 2025-10-21 12:44:47,355 - INFO - ============================================================
 2025-10-21 12:44:47,355 - INFO - [SUCCESS] APPLICATION STARTUP COMPLETED
 2025-10-21 12:44:47,355 - INFO - ============================================================
+2025-10-21 17:08:03,550 - INFO - Initializing databases...
+2025-10-21 17:08:03,563 - INFO - Database initialized successfully
+2025-10-21 17:08:03,564 - INFO - [SUCCESS] Users database initialized
+2025-10-21 17:08:03,568 - INFO - Database 'stocks.db' initialized with 'stocks' table
+2025-10-21 17:08:03,568 - INFO - [SUCCESS] Stocks database initialized
+2025-10-21 17:08:03,569 - INFO - Loading and preprocessing dataset...
+2025-10-21 17:08:03,569 - INFO - Loading dataset from: data\dataset.csv
+2025-10-21 17:08:03,608 - INFO - Successfully loaded dataset with delimiter ',' and encoding 'utf-8'
+2025-10-21 17:08:03,609 - INFO - Dataset shape: (10, 7)
+2025-10-21 17:08:03,609 - INFO - Dataset columns: ['company_name', 'symbol', 'sector', 'industry', 'description', 'country', 'market_cap_billions']
+2025-10-21 17:08:03,610 - INFO - First 3 rows of dataset:
+2025-10-21 17:08:03,613 - INFO -   company_name: ['Apple Inc.', 'Microsoft Corporation', 'Google LLC']
+2025-10-21 17:08:03,614 - INFO -   symbol: ['AAPL', 'MSFT', 'GOOGL']
+2025-10-21 17:08:03,614 - INFO -   sector: ['Technology', 'Technology', 'Technology']
+2025-10-21 17:08:03,615 - INFO -   industry: ['Consumer Electronics', 'Software—Infrastructure', 'Internet Content & Information']
+2025-10-21 17:08:03,616 - INFO -   description: ['Apple designs a wide variety of consumer electronic devices, including smartphones, personal computers, tablets, wearables, and accessories.', 'Microsoft develops and licenses consumer and enterprise software, including Windows operating systems and Office productivity suite.', 'Google is the largest internet search engine and a dominant player in online advertising and cloud computing.']
+2025-10-21 17:08:03,617 - INFO -   country: ['USA', 'USA', 'USA']
+2025-10-21 17:08:03,618 - INFO -   market_cap_billions: [2800, 2100, 1800]
+2025-10-21 17:08:03,618 - INFO - Tokenizing columns: ['company_name', 'symbol', 'sector', 'industry', 'description', 'country']
+2025-10-21 17:08:03,939 - INFO - Tokenization completed successfully
+2025-10-21 17:08:03,940 - INFO - Tokenization sample:
+2025-10-21 17:08:03,940 - INFO -   Document 0: ['apple', 'inc', 'aapl', 'technology', 'consumer', 'electronic', 'apple', 'design', 'wide', 'variety']...
+2025-10-21 17:08:03,940 - INFO -   Document 1: ['microsoft', 'corporation', 'msft', 'technology', 'software', 'infrastructure', 'microsoft', 'develop', 'license', 'consumer']...
+2025-10-21 17:08:03,941 - INFO - [SUCCESS] Dataset loaded and preprocessed successfully
+2025-10-21 17:08:03,941 - INFO - Initializing search engine...
+2025-10-21 17:08:03,941 - INFO - Building search index...
+2025-10-21 17:08:03,942 - INFO - Index built with 113 unique terms
+2025-10-21 17:08:03,942 - INFO - [SUCCESS] Search engine initialized successfully
+2025-10-21 17:09:00,340 - INFO - Initializing databases...
+2025-10-21 17:09:00,341 - INFO - Database initialized successfully
+2025-10-21 17:09:00,341 - INFO - [SUCCESS] Users database initialized
+2025-10-21 17:09:00,342 - INFO - Database 'stocks.db' initialized with 'stocks' table
+2025-10-21 17:09:00,343 - INFO - [SUCCESS] Stocks database initialized
+2025-10-21 17:09:00,343 - INFO - Loading and preprocessing dataset...
+2025-10-21 17:09:00,343 - INFO - Loading dataset from: data\dataset.csv
+2025-10-21 17:09:00,347 - INFO - Successfully loaded dataset with delimiter ',' and encoding 'utf-8'
+2025-10-21 17:09:00,348 - INFO - Dataset shape: (10, 7)
+2025-10-21 17:09:00,349 - INFO - Dataset columns: ['company_name', 'symbol', 'sector', 'industry', 'description', 'country', 'market_cap_billions']
+2025-10-21 17:09:00,350 - INFO - First 3 rows of dataset:
+2025-10-21 17:09:00,351 - INFO -   company_name: ['Apple Inc.', 'Microsoft Corporation', 'Google LLC']
+2025-10-21 17:09:00,351 - INFO -   symbol: ['AAPL', 'MSFT', 'GOOGL']
+2025-10-21 17:09:00,352 - INFO -   sector: ['Technology', 'Technology', 'Technology']
+2025-10-21 17:09:00,353 - INFO -   industry: ['Consumer Electronics', 'Software—Infrastructure', 'Internet Content & Information']
+2025-10-21 17:09:00,354 - INFO -   description: ['Apple designs a wide variety of consumer electronic devices, including smartphones, personal computers, tablets, wearables, and accessories.', 'Microsoft develops and licenses consumer and enterprise software, including Windows operating systems and Office productivity suite.', 'Google is the largest internet search engine and a dominant player in online advertising and cloud computing.']
+2025-10-21 17:09:00,355 - INFO -   country: ['USA', 'USA', 'USA']
+2025-10-21 17:09:00,356 - INFO -   market_cap_billions: [2800, 2100, 1800]
+2025-10-21 17:09:00,357 - INFO - Tokenizing columns: ['company_name', 'symbol', 'sector', 'industry', 'description', 'country']
+2025-10-21 17:09:00,610 - INFO - Tokenization completed successfully
+2025-10-21 17:09:00,610 - INFO - Tokenization sample:
+2025-10-21 17:09:00,611 - INFO -   Document 0: ['apple', 'inc', 'aapl', 'technology', 'consumer', 'electronic', 'apple', 'design', 'wide', 'variety']...
+2025-10-21 17:09:00,611 - INFO -   Document 1: ['microsoft', 'corporation', 'msft', 'technology', 'software', 'infrastructure', 'microsoft', 'develop', 'license', 'consumer']...
+2025-10-21 17:09:00,611 - INFO - [SUCCESS] Dataset loaded and preprocessed successfully
+2025-10-21 17:09:00,611 - INFO - Initializing search engine...
+2025-10-21 17:09:00,611 - INFO - Building search index...
+2025-10-21 17:09:00,612 - INFO - Index built with 113 unique terms
+2025-10-21 17:09:00,612 - INFO - [SUCCESS] Search engine initialized successfully
+2025-10-21 17:09:08,101 - INFO - ============================================================
+2025-10-21 17:09:08,101 - INFO - STOCK SEARCH ENGINE - APPLICATION STARTUP
+2025-10-21 17:09:08,102 - INFO - ============================================================
+2025-10-21 17:09:08,102 - INFO - Initializing databases...
+2025-10-21 17:09:08,103 - INFO - Database initialized successfully
+2025-10-21 17:09:08,104 - INFO - [SUCCESS] Users database initialized
+2025-10-21 17:09:08,105 - INFO - Database 'stocks.db' initialized with 'stocks' table
+2025-10-21 17:09:08,105 - INFO - [SUCCESS] Stocks database initialized
+2025-10-21 17:09:08,106 - INFO - Loading and preprocessing dataset...
+2025-10-21 17:09:08,107 - INFO - Loading dataset from: data\dataset.csv
+2025-10-21 17:09:08,115 - INFO - Successfully loaded dataset with delimiter ',' and encoding 'utf-8'
+2025-10-21 17:09:08,117 - INFO - Dataset shape: (10, 7)
+2025-10-21 17:09:08,117 - INFO - Dataset columns: ['company_name', 'symbol', 'sector', 'industry', 'description', 'country', 'market_cap_billions']
+2025-10-21 17:09:08,118 - INFO - First 3 rows of dataset:
+2025-10-21 17:09:08,119 - INFO -   company_name: ['Apple Inc.', 'Microsoft Corporation', 'Google LLC']
+2025-10-21 17:09:08,120 - INFO -   symbol: ['AAPL', 'MSFT', 'GOOGL']
+2025-10-21 17:09:08,121 - INFO -   sector: ['Technology', 'Technology', 'Technology']
+2025-10-21 17:09:08,123 - INFO -   industry: ['Consumer Electronics', 'Software—Infrastructure', 'Internet Content & Information']
+2025-10-21 17:09:08,124 - INFO -   description: ['Apple designs a wide variety of consumer electronic devices, including smartphones, personal computers, tablets, wearables, and accessories.', 'Microsoft develops and licenses consumer and enterprise software, including Windows operating systems and Office productivity suite.', 'Google is the largest internet search engine and a dominant player in online advertising and cloud computing.']
+2025-10-21 17:09:08,125 - INFO -   country: ['USA', 'USA', 'USA']
+2025-10-21 17:09:08,125 - INFO -   market_cap_billions: [2800, 2100, 1800]
+2025-10-21 17:09:08,126 - INFO - Tokenizing columns: ['company_name', 'symbol', 'sector', 'industry', 'description', 'country']
+2025-10-21 17:09:08,408 - INFO - Tokenization completed successfully
+2025-10-21 17:09:08,409 - INFO - Tokenization sample:
+2025-10-21 17:09:08,409 - INFO -   Document 0: ['apple', 'inc', 'aapl', 'technology', 'consumer', 'electronic', 'apple', 'design', 'wide', 'variety']...
+2025-10-21 17:09:08,409 - INFO -   Document 1: ['microsoft', 'corporation', 'msft', 'technology', 'software', 'infrastructure', 'microsoft', 'develop', 'license', 'consumer']...
+2025-10-21 17:09:08,410 - INFO - [SUCCESS] Dataset loaded and preprocessed successfully
+2025-10-21 17:09:08,410 - INFO - Initializing search engine...
+2025-10-21 17:09:08,410 - INFO - Building search index...
+2025-10-21 17:09:08,411 - INFO - Index built with 113 unique terms
+2025-10-21 17:09:08,411 - INFO - [SUCCESS] Search engine initialized successfully
+2025-10-21 17:09:08,412 - INFO - ==================================================
+2025-10-21 17:09:08,412 - INFO - APPLICATION INFORMATION
+2025-10-21 17:09:08,412 - INFO - ==================================================
+2025-10-21 17:09:08,413 - INFO -   status: ready
+2025-10-21 17:09:08,413 - INFO -   documents: 10
+2025-10-21 17:09:08,413 - INFO -   search_terms: 113
+2025-10-21 17:09:08,414 - INFO -   dataset_columns: ['company_name', 'symbol', 'sector', 'industry', 'description', 'country', 'market_cap_billions', 'tokens']
+2025-10-21 17:09:08,415 - INFO - ==================================================
+2025-10-21 17:09:08,415 - INFO - RUNNING TEST SEARCHES
+2025-10-21 17:09:08,416 - INFO - ==================================================
+2025-10-21 17:09:08,416 - INFO - Searching for: 'technology'
+2025-10-21 17:09:08,422 - INFO - Searching for: 'technology' -> tokens: ['technology']
+2025-10-21 17:09:08,423 - INFO - Query: 'technology' -> Found 3 results
+2025-10-21 17:09:08,424 - INFO -   1. Doc 5 (Score: 0.5687)
+2025-10-21 17:09:08,425 - INFO -      Preview: NVIDIA Corporation NVDA Technology Semiconductors NVIDIA is a leading manufacturer of graphics proce...
+2025-10-21 17:09:08,426 - INFO -   2. Doc 9 (Score: 0.5687)
+2025-10-21 17:09:08,427 - INFO -      Preview: Intel Corporation INTC Technology Semiconductors Intel designs and manufactures microprocessors and ...
+2025-10-21 17:09:08,428 - INFO -   3. Doc 8 (Score: 0.5261)
+2025-10-21 17:09:08,429 - INFO -      Preview: Adobe Inc. ADBE Technology Software—Infrastructure Adobe provides creative software products for des...
+2025-10-21 17:09:08,429 - INFO - Searching for: 'apple'
+2025-10-21 17:09:08,434 - INFO - Searching for: 'apple' -> tokens: ['apple']
+2025-10-21 17:09:08,436 - INFO - Query: 'apple' -> Found 1 results
+2025-10-21 17:09:08,437 - INFO -   1. Doc 0 (Score: 2.7016)
+2025-10-21 17:09:08,437 - INFO -      Preview: Apple Inc. AAPL Technology Consumer Electronics Apple designs a wide variety of consumer electronic ...
+2025-10-21 17:09:08,437 - INFO - Searching for: 'software'
+2025-10-21 17:09:08,444 - INFO - Searching for: 'software' -> tokens: ['software']
+2025-10-21 17:09:08,445 - INFO - Query: 'software' -> Found 2 results
+2025-10-21 17:09:08,446 - INFO -   1. Doc 8 (Score: 2.1166)
+2025-10-21 17:09:08,446 - INFO -      Preview: Adobe Inc. ADBE Technology Software—Infrastructure Adobe provides creative software products for des...
+2025-10-21 17:09:08,447 - INFO -   2. Doc 1 (Score: 2.0436)
+2025-10-21 17:09:08,447 - INFO -      Preview: Microsoft Corporation MSFT Technology Software—Infrastructure Microsoft develops and licenses consum...
+2025-10-21 17:09:08,448 - INFO - Searching for: 'internet'
+2025-10-21 17:09:08,452 - INFO - Searching for: 'internet' -> tokens: ['internet']
+2025-10-21 17:09:08,453 - INFO - Query: 'internet' -> Found 3 results
+2025-10-21 17:09:08,454 - INFO -   1. Doc 2 (Score: 1.6072)
+2025-10-21 17:09:08,454 - INFO -      Preview: Google LLC GOOGL Technology Internet Content & Information Google is the largest internet search eng...
+2025-10-21 17:09:08,455 - INFO -   2. Doc 3 (Score: 1.1172)
+2025-10-21 17:09:08,456 - INFO -      Preview: Amazon.com Inc. AMZN Consumer Cyclical Internet Retail Amazon is a leading online retailer and cloud...
+2025-10-21 17:09:08,456 - INFO -   3. Doc 6 (Score: 1.1172)
+2025-10-21 17:09:08,457 - INFO -      Preview: Meta Platforms Inc. META Communication Services Internet Content & Information Meta operates social ...
+2025-10-21 17:09:08,458 - INFO - ============================================================
+2025-10-21 17:09:08,458 - INFO - [SUCCESS] APPLICATION STARTUP COMPLETED
+2025-10-21 17:09:08,458 - INFO - ============================================================
+2025-10-21 17:10:02,754 - INFO - Database 'stocks.db' initialized with 'stocks' table
+2025-10-21 17:10:02,755 - INFO - Fetching data for 10 stocks...
+2025-10-21 17:10:08,206 - ERROR - Database error for AAPL: table stocks has no column named volume
+2025-10-21 17:10:10,175 - ERROR - Database error for MSFT: table stocks has no column named volume
+2025-10-21 17:10:12,148 - ERROR - Database error for GOOG: table stocks has no column named volume
+2025-10-21 17:10:14,145 - ERROR - Database error for AMZN: table stocks has no column named volume
+2025-10-21 17:10:16,013 - ERROR - Database error for TSLA: table stocks has no column named volume
+2025-10-21 17:10:17,859 - ERROR - Database error for NVDA: table stocks has no column named volume
+2025-10-21 17:10:19,844 - ERROR - Database error for META: table stocks has no column named volume
+2025-10-21 17:10:21,629 - ERROR - Database error for NFLX: table stocks has no column named volume
+2025-10-21 17:10:23,490 - ERROR - Database error for AMD: table stocks has no column named volume
+2025-10-21 17:10:25,341 - ERROR - Database error for INTC: table stocks has no column named volume
+2025-10-21 17:10:26,342 - INFO - Successfully updated 10/10 stocks
+2025-10-21 17:11:26,346 - INFO - Fetching data for 10 stocks...
+2025-10-21 17:11:26,817 - ERROR - Database error for AAPL: table stocks has no column named volume
+2025-10-21 17:11:28,313 - ERROR - Database error for MSFT: table stocks has no column named volume
+2025-10-21 17:11:29,813 - ERROR - Database error for GOOG: table stocks has no column named volume
+2025-10-21 17:11:31,296 - ERROR - Database error for AMZN: table stocks has no column named volume
+2025-10-21 17:11:32,789 - ERROR - Database error for TSLA: table stocks has no column named volume
+2025-10-21 17:11:34,339 - ERROR - Database error for NVDA: table stocks has no column named volume
+2025-10-21 17:11:35,936 - ERROR - Database error for META: table stocks has no column named volume
+2025-10-21 17:11:37,474 - ERROR - Database error for NFLX: table stocks has no column named volume
+2025-10-21 17:11:38,986 - ERROR - Database error for AMD: table stocks has no column named volume
+2025-10-21 17:11:40,473 - ERROR - Database error for INTC: table stocks has no column named volume
+2025-10-21 17:11:41,475 - INFO - Successfully updated 10/10 stocks
+2025-10-21 17:12:41,477 - INFO - Fetching data for 10 stocks...
+2025-10-21 17:12:41,970 - ERROR - Database error for AAPL: table stocks has no column named volume
+2025-10-21 17:12:43,427 - ERROR - Database error for MSFT: table stocks has no column named volume
+2025-10-21 17:12:45,064 - ERROR - Database error for GOOG: table stocks has no column named volume
+2025-10-21 17:12:46,510 - ERROR - Database error for AMZN: table stocks has no column named volume
+2025-10-21 17:12:47,971 - ERROR - Database error for TSLA: table stocks has no column named volume
+2025-10-21 17:12:49,457 - ERROR - Database error for NVDA: table stocks has no column named volume
+2025-10-21 17:12:51,017 - ERROR - Database error for META: table stocks has no column named volume
+2025-10-21 17:12:52,514 - ERROR - Database error for NFLX: table stocks has no column named volume
+2025-10-21 17:12:54,267 - ERROR - Database error for AMD: table stocks has no column named volume
+2025-10-21 17:12:55,975 - ERROR - Database error for INTC: table stocks has no column named volume
+2025-10-21 17:12:56,976 - INFO - Successfully updated 10/10 stocks
+2025-10-21 17:13:50,525 - INFO - Database 'stocks.db' initialized with 'stocks' table
+2025-10-21 17:13:50,525 - INFO - Fetching data for 10 stocks...
+2025-10-21 17:13:52,310 - ERROR - Database error for AAPL: table stocks has no column named volume
+2025-10-21 17:13:53,989 - ERROR - Database error for MSFT: table stocks has no column named volume
+2025-10-21 17:13:55,536 - ERROR - Database error for GOOG: table stocks has no column named volume
