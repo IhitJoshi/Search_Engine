@@ -215,31 +215,58 @@ def search():
             raise APIError("No JSON data provided")
             
         query = data.get('query', '').strip()
-        
         if not query:
             raise APIError("Query cannot be empty")
-        
         if len(query) > 500:
             raise APIError("Query too long")
-        
-        # Perform search
+        print(df.columns)
+        print(df.head().to_dict(orient="records"))
+
+        logger.info(f"Received search query: '{query}'")
+
+        # --- Primary: use search engine ---
         results = search_engine.search(query, df, top_n=10)
-        
-        # Format results
+
+        # --- Fallback: direct keyword match if no results ---
+        if not results or len(results) == 0:
+            logger.warning(f"No results from search engine for '{query}', using fallback match.")
+            query_lower = query.lower()
+
+            # Match against key columns if they exist
+            match_columns = [c for c in ["symbol", "company_name", "sector", "industry", "name"] if c in df.columns]
+
+            if match_columns:
+                filtered_df = df[
+                    df.apply(
+                        lambda row: any(
+                            query_lower in str(row[col]).lower() for col in match_columns
+                        ),
+                        axis=1,
+                    )
+                ]
+
+                # Create dummy scores for fallback results
+                results = [(i, 1.0) for i in filtered_df.index]
+            else:
+                logger.error(f"No searchable columns found in dataset for fallback.")
+                results = []
+
+        # --- Format results for JSON output ---
         formatted_results = []
         for idx, (doc_idx, score) in enumerate(results, 1):
+            if doc_idx >= len(df):
+                continue
             doc_data = df.iloc[doc_idx]
-            
-            # Create preview from all non-token columns
+
+            # Create preview text
             preview_parts = []
             for col in df.columns:
                 if col != 'tokens' and pd.notna(doc_data[col]):
                     preview_parts.append(str(doc_data[col]))
-            
             preview = " ".join(preview_parts)
             if len(preview) > 200:
                 preview = preview[:200] + "..."
-            
+
             formatted_results.append({
                 'rank': idx,
                 'doc_id': int(doc_idx),
@@ -247,19 +274,20 @@ def search():
                 'preview': preview.strip(),
                 'data': {col: doc_data[col] for col in df.columns if col != 'tokens'}
             })
-        
-        logger.info(f"Search completed for '{query}': {len(results)} results")
+
+        logger.info(f"Search completed for '{query}': {len(formatted_results)} results")
         return jsonify({
             'query': query,
-            'total_results': len(results),
+            'total_results': len(formatted_results),
             'results': formatted_results
         })
-        
+
     except APIError:
         raise
     except Exception as e:
         logger.error(f"Search error: {e}")
         raise APIError("Search failed")
+
 @app.route("/api/stocks", methods=["GET"])
 def get_stocks():
     """Return latest stock data"""
