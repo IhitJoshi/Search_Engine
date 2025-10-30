@@ -73,8 +73,8 @@ const [formData, setFormData] = useState({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl p-8 w-full max-w-md border border-white/20">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-shadow duration-300 p-8 w-full max-w-md border border-gray-100">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
             SearchPro

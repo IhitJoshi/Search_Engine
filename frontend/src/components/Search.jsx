@@ -112,9 +112,9 @@ const Search = ({ username, onLogout }) => {
   };
 
   return (
-    <div className="min-h-screen bg-transparent">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-  <div className="bg-gray-900/70 text-white px-6 py-3 flex justify-between items-center">
+  <div className="bg-gray-900 text-white px-6 py-3 flex justify-between items-center shadow-lg">
         <h1 className="text-xl font-semibold flex items-center gap-2">
           <i className="fas fa-chart-line"></i> Stock Dashboard
         </h1>
@@ -198,12 +198,12 @@ const Search = ({ username, onLogout }) => {
               <div
   key={stock.symbol}
   onClick={() => setSelectedStock(stock.symbol)} // 🟢 Add this
-  className={`rounded-xl p-6 shadow-sm border transition-all duration-700 transform hover:-translate-y-1 hover:shadow-md cursor-pointer backdrop-blur-sm ${
+  className={`rounded-xl p-6 shadow-lg hover:shadow-2xl border transition-all duration-300 transform hover:-translate-y-2 cursor-pointer ${
     stock.changed === "up"
-      ? "bg-green-50/70 border-green-300"
+      ? "bg-white border-green-200 hover:border-green-300"
       : stock.changed === "down"
-      ? "bg-red-50/70 border-red-300"
-      : "bg-white/70 border-gray-200"
+      ? "bg-white border-red-200 hover:border-red-300"
+      : "bg-white border-gray-200 hover:border-indigo-300"
   }`}
 >
                 <StockCard stock={stock} />
@@ -214,7 +214,7 @@ const Search = ({ username, onLogout }) => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-800/70 text-gray-300 text-center py-6 border-t border-gray-700/50">
+      <footer className="bg-gray-900 text-gray-300 text-center py-6 border-t border-gray-700 shadow-lg">
         <p>Stock Dashboard © 2025 | Powered by Python & React</p>
       </footer>
       {selectedStock && (
