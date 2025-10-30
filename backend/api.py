@@ -332,35 +332,51 @@ CACHE_TTL = 300  # 5 minutes in seconds
 @app.route("/api/stocks/<symbol>", methods=["GET"])
 def get_stock_details(symbol):
     import traceback
+    import pandas as pd
     import yfinance as yf
-    from flask import jsonify
-    import time
+    from flask import jsonify, request
 
     try:
-        # Check cache first
-        cache_key = f"details_{symbol}"
-        current_time = time.time()
-        
-        if cache_key in stock_details_cache:
-            cached_data, cached_time = stock_details_cache[cache_key]
-            if current_time - cached_time < CACHE_TTL:
-                print(f"[CACHE HIT] Returning cached data for {symbol}")
-                return jsonify(cached_data)
-            else:
-                print(f"[CACHE EXPIRED] Re-fetching data for {symbol}")
-        
-        print(f"[CACHE MISS] Fetching fresh stock details for {symbol}")
+        range_param = request.args.get("range", "1D").upper()
         stock = yf.Ticker(symbol)
 
-        # Safely get history
-        hist = stock.history(period="1mo", interval="1d")
-        if hist is None or hist.empty:
-            print("[DEBUG] No data found in history")
-            return jsonify({"error": f"No data found for symbol {symbol}"}), 404
+        # 🕒 Choose period + interval
+        if range_param == "1D":
+            # Intraday data for 1 day (shows time on x-axis)
+            hist = stock.history(period="1d", interval="5m")
+        elif range_param == "5D":
+            hist = stock.history(period="5d", interval="30m")
+        elif range_param == "1M":
+            hist = stock.history(period="1mo", interval="1d")
+        elif range_param == "3M":
+            hist = stock.history(period="3mo", interval="1d")
+        elif range_param == "1Y":
+            hist = stock.history(period="1y", interval="1wk")
+        else:
+            hist = stock.history(period="1mo", interval="1d")
 
+        if hist.empty:
+            return jsonify({"error": "No data found"}), 404
+
+        # 🔧 Handle Date or Datetime columns
+        hist = hist.reset_index()
+        date_col = "Date"
+        if "Datetime" in hist.columns:
+            date_col = "Datetime"
+
+        # Format date/time nicely
+        if range_param == "1D":
+            hist[date_col] = pd.to_datetime(hist[date_col]).dt.strftime("%H:%M")
+        else:
+            hist[date_col] = pd.to_datetime(hist[date_col]).dt.strftime("%Y-%m-%d")
+
+        # Remove duplicates
+        hist = hist.drop_duplicates(subset=[date_col], keep="last")
+
+        # 📊 Fetch basic stock info
         info = {}
         try:
-            info = stock.info or {}
+            info = stock.info
         except Exception as e:
             print("[DEBUG] Failed fetching stock.info:", e)
 
@@ -368,28 +384,22 @@ def get_stock_details(symbol):
             "symbol": symbol,
             "name": info.get("longName", symbol),
             "sector": info.get("sector", "N/A"),
-            "currentPrice": info.get("currentPrice", hist["Close"].iloc[-1] if not hist.empty else None),
+            "currentPrice": info.get("currentPrice", None),
             "marketCap": info.get("marketCap", None),
             "volume": info.get("volume", None),
         }
 
         chart_data = [
-            {"date": date.strftime("%Y-%m-%d"), "price": float(row["Close"])}
-            for date, row in hist.iterrows()
+            {"date": row[date_col], "price": float(row["Close"])}
+            for _, row in hist.iterrows()
         ]
 
-        response_data = {"details": details, "chart": chart_data}
-        
-        # Store in cache
-        stock_details_cache[cache_key] = (response_data, current_time)
-        print(f"[CACHE STORED] Cached data for {symbol}")
-
-        return jsonify(response_data)
+        return jsonify({"details": details, "chart": chart_data})
 
     except Exception as e:
         print("[ERROR] Detailed exception:")
         traceback.print_exc()
-        return jsonify({"error": f"Failed to fetch stock details: {str(e)}"}), 500
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == '__main__':
