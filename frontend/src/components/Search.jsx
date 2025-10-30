@@ -109,9 +109,9 @@ const Search = ({ username, onLogout }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-transparent">
       {/* Header */}
-      <div className="bg-gray-900 text-white px-6 py-3 flex justify-between items-center">
+  <div className="bg-gray-900/70 text-white px-6 py-3 flex justify-between items-center">
         <h1 className="text-xl font-semibold flex items-center gap-2">
           <i className="fas fa-chart-line"></i> Stock Dashboard
         </h1>
@@ -147,7 +147,7 @@ const Search = ({ username, onLogout }) => {
         </div>
 
         {/* Stats + Message */}
-        <div className="mt-4 text-sm">
+        <div className="mt-4 text-sm ">
           {stats.query && (
             <p className="text-gray-600">
               Found{" "}
@@ -175,7 +175,7 @@ const Search = ({ username, onLogout }) => {
       </div>
 
       {/* Stocks Section */}
-      <main className="max-w-7xl mx-auto py-8 px-4">
+      <main className="max-w-7xl mx-auto py-8 px-4 ">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">
           📈 Live Stock Market Overview
         </h2>
@@ -190,16 +190,16 @@ const Search = ({ username, onLogout }) => {
         {displayedStocks.length === 0 ? (
           <p className="text-gray-500">No stock data available.</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 ">
             {displayedStocks.map((stock) => (
               <div
                 key={stock.symbol}
-                className={`rounded-xl p-6 shadow-sm border transition-all duration-700 transform hover:-translate-y-1 hover:shadow-md ${
+                className={`rounded-xl p-6 shadow-sm border transition-all duration-700 transform hover:-translate-y-1 hover:shadow-md backdrop-blur-sm ${
                   stock.changed === "up"
-                    ? "bg-green-50 border-green-300"
+                    ? "bg-green-50/70 border-green-300"
                     : stock.changed === "down"
-                    ? "bg-red-50 border-red-300"
-                    : "bg-white border-gray-200"
+                    ? "bg-red-50/70 border-red-300"
+                    : "bg-white/70 border-gray-200"
                 }`}
               >
                 <div className="flex justify-between items-center mb-2">
@@ -242,7 +242,7 @@ const Search = ({ username, onLogout }) => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-800 text-gray-300 text-center py-6 border-t border-gray-700">
+      <footer className="bg-gray-800/70 text-gray-300 text-center py-6 border-t border-gray-700/50">
         <p>Stock Dashboard © 2025 | Powered by Python & React</p>
       </footer>
     </div>
