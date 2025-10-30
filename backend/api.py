@@ -325,6 +325,51 @@ def app_info():
         'documents': len(df) if 'df' in globals() else 0
     })
 
+@app.route("/api/stocks/<symbol>", methods=["GET"])
+def get_stock_details(symbol):
+    import traceback
+    import yfinance as yf
+    from flask import jsonify
+
+    try:
+        print(f"[DEBUG] Fetching stock details for {symbol}")
+        stock = yf.Ticker(symbol)
+
+        # Safely get history
+        hist = stock.history(period="1mo", interval="1d")
+        if hist is None or hist.empty:
+            print("[DEBUG] No data found in history")
+            return jsonify({"error": f"No data found for symbol {symbol}"}), 404
+
+        info = {}
+        try:
+            info = stock.info or {}
+        except Exception as e:
+            print("[DEBUG] Failed fetching stock.info:", e)
+
+        details = {
+            "symbol": symbol,
+            "name": info.get("longName", symbol),
+            "sector": info.get("sector", "N/A"),
+            "currentPrice": info.get("currentPrice", hist["Close"].iloc[-1] if not hist.empty else None),
+            "marketCap": info.get("marketCap", None),
+            "volume": info.get("volume", None),
+        }
+
+        chart_data = [
+            {"date": date.strftime("%Y-%m-%d"), "price": float(row["Close"])}
+            for date, row in hist.iterrows()
+        ]
+
+        return jsonify({"details": details, "chart": chart_data})
+
+    except Exception as e:
+        print("[ERROR] Detailed exception:")
+        traceback.print_exc()
+        return jsonify({"error": f"Failed to fetch stock details: {str(e)}"}), 500
+
+
 if __name__ == '__main__':
     logger.info("Starting Flask application...")
     app.run(debug=True, host='0.0.0.0', port=5000)
+
