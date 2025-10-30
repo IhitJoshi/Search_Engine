@@ -325,14 +325,31 @@ def app_info():
         'documents': len(df) if 'df' in globals() else 0
     })
 
+# 🚀 In-memory cache for stock details (TTL: 5 minutes)
+stock_details_cache = {}
+CACHE_TTL = 300  # 5 minutes in seconds
+
 @app.route("/api/stocks/<symbol>", methods=["GET"])
 def get_stock_details(symbol):
     import traceback
     import yfinance as yf
     from flask import jsonify
+    import time
 
     try:
-        print(f"[DEBUG] Fetching stock details for {symbol}")
+        # Check cache first
+        cache_key = f"details_{symbol}"
+        current_time = time.time()
+        
+        if cache_key in stock_details_cache:
+            cached_data, cached_time = stock_details_cache[cache_key]
+            if current_time - cached_time < CACHE_TTL:
+                print(f"[CACHE HIT] Returning cached data for {symbol}")
+                return jsonify(cached_data)
+            else:
+                print(f"[CACHE EXPIRED] Re-fetching data for {symbol}")
+        
+        print(f"[CACHE MISS] Fetching fresh stock details for {symbol}")
         stock = yf.Ticker(symbol)
 
         # Safely get history
@@ -361,7 +378,13 @@ def get_stock_details(symbol):
             for date, row in hist.iterrows()
         ]
 
-        return jsonify({"details": details, "chart": chart_data})
+        response_data = {"details": details, "chart": chart_data}
+        
+        # Store in cache
+        stock_details_cache[cache_key] = (response_data, current_time)
+        print(f"[CACHE STORED] Cached data for {symbol}")
+
+        return jsonify(response_data)
 
     except Exception as e:
         print("[ERROR] Detailed exception:")
