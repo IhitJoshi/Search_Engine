@@ -32,14 +32,36 @@ CORS(app,
 ],  # Frontend URLs
      allow_headers=["Content-Type", "Authorization"],
      methods=["GET", "POST", "PUT", "DELETE"])
-# Initialize StockSearchApp and run data fetcher in background
+
+# Initialize StockSearchApp
 stock_app = StockSearchApp()
-stock_app.initialize_system()
+
+def initialize_stock_system():
+    """Initialize stock system in background"""
+    try:
+        stock_app.initialize_system()
+        logger.info("Stock system initialization completed")
+    except Exception as e:
+        logger.error(f"Stock system initialization failed: {e}")
 
 def run_background_fetcher():
-    stock_app.stock_fetcher.run_continuous_fetch(["AAPL","MSFT","GOOG","AMZN","TSLA","NVDA","META","NFLX","AMD","INTC"], 60)
+    # Fetch all 48 stocks from our complete list
+    all_stocks = [
+        # Technology
+        "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA", "AVGO", "TSM", "TCEHY",
+        # Finance
+        "JPM", "BAC", "V", "MA", "PYPL", "SQ", "GS", "MS", "AXP", "INTU",
+        # Energy
+    "NEE", "ENPH", "FSLR", "VWS.CO", "ORSTED.CO", "XOM", "CVX", "BP", "TTE", "SHEL",
+        # Healthcare
+        "JNJ", "PFE", "MRK", "NVS", "RHHBY", "AMGN", "GILD", "BIIB", "REGN", "MRNA",
+        # Automotive
+        "NIO", "RIVN", "LCID", "BYD", "TM", "HMC", "GM", "F", "STLA", "VWAGY"
+    ]
+    stock_app.stock_fetcher.run_continuous_fetch(all_stocks, 60)
 
-# Run background fetcher in a separate thread
+# Run initialization and background fetcher in separate threads
+threading.Thread(target=initialize_stock_system, daemon=True).start()
 threading.Thread(target=run_background_fetcher, daemon=True).start()
 
 # Initialize database
@@ -78,6 +100,15 @@ def require_auth():
 @app.before_request
 def initialize_app():
     """Initialize application data"""
+    # Skip heavy initialization for auth-related endpoints
+    auth_paths = {"/api/login", "/api/signup", "/api/logout", "/api/auth/check", "/api/forgot-password"}
+    try:
+        if request.path in auth_paths or request.path.startswith("/static"):
+            return
+    except Exception:
+        # In case request is not available or other edge cases, continue safely
+        pass
+
     if not hasattr(app, "_initialized"):
         try:
             logger.info("Loading dataset and building search index...")
@@ -191,18 +222,43 @@ def logout():
     logger.info(f"User logged out: {username}")
     return jsonify({'message': 'Logout successful!'})
 
+@app.route("/api/forgot-password", methods=["POST"])
+def forgot_password():
+    """Forgot password endpoint - sends reset instructions"""
+    try:
+        data = request.get_json()
+        if not data:
+            raise APIError("No JSON data provided")
+            
+        email = data.get("email", "").strip()
+        
+        if not email:
+            raise APIError("Email is required")
+        
+        # For development: Always respond success without DB dependency
+        # This avoids blocking on DB or email infra and prevents noisy errors
+        logger.info(f"Password reset requested for email: {email}")
+        return jsonify({
+            'message': 'If that email exists, password reset instructions have been sent',
+            'email': email
+        })
+            
+    except APIError:
+        raise
+    except Exception as e:
+        logger.error(f"Forgot password error: {e}")
+        raise APIError("Failed to process password reset request")
+
 @app.route("/api/auth/check", methods=["GET"])
 def check_auth():
     """Check authentication status"""
     if 'username' in session:
         return jsonify({
-            'authenticated': True,
-            'user': {
-                'username': session['username'],
-                'email': session.get('email')
-            }
+            'logged_in': True,
+            'username': session['username'],
+            'email': session.get('email')
         })
-    return jsonify({'authenticated': False})
+    return jsonify({'logged_in': False})
 
 # Search routes
 @app.route('/api/search', methods=['POST'])
@@ -215,29 +271,68 @@ def search():
             raise APIError("No JSON data provided")
             
         query = data.get('query', '').strip()
-        if not query:
-            raise APIError("Query cannot be empty")
-        if len(query) > 500:
+        sector_filter = data.get('sector', '').strip()  # Optional sector filter
+        limit = data.get('limit', 50)  # Optional limit
+        
+        # Allow empty query and sector to show all stocks
+        if query and len(query) > 500:
             raise APIError("Query too long")
-        print(df.columns)
-        print(df.head().to_dict(orient="records"))
 
-        logger.info(f"Received search query: '{query}'")
+        logger.info(f"Received search query: '{query}', sector: '{sector_filter}', limit: {limit}")
 
+        # --- If sector filter is provided, filter by sector first ---
+        working_df = df
+        if sector_filter:
+            # Filter stocks by sector from the database
+            with stock_app.db_manager.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT DISTINCT symbol FROM stocks 
+                    WHERE sector = ? 
+                    ORDER BY last_updated DESC
+                ''', (sector_filter,))
+                sector_symbols = [row['symbol'] for row in cursor.fetchall()]
+            
+            if sector_symbols and 'symbol' in df.columns:
+                # Filter dataframe to only include stocks from this sector
+                working_df = df[df['symbol'].isin(sector_symbols)]
+                logger.info(f"Filtered to {len(working_df)} stocks in sector '{sector_filter}'")
+            else:
+                logger.warning(f"No stocks found for sector '{sector_filter}'")
+                working_df = df[df.index < 0]  # Empty dataframe
+        else:
+            # No sector filter - get ALL stocks from database
+            with stock_app.db_manager.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT DISTINCT symbol FROM stocks 
+                    ORDER BY last_updated DESC
+                ''')
+                all_symbols = [row['symbol'] for row in cursor.fetchall()]
+            
+            if all_symbols and 'symbol' in df.columns:
+                # Filter dataframe to only include stocks we have in database
+                working_df = df[df['symbol'].isin(all_symbols)]
+                logger.info(f"Showing all stocks: {len(working_df)} stocks in database")
+        
         # --- Primary: use search engine ---
-        results = search_engine.search(query, df, top_n=10)
+        if query:
+            results = search_engine.search(query, working_df, top_n=limit)
+        else:
+            # If no query, just return all stocks from the filtered sector
+            results = [(i, 1.0) for i in working_df.index[:limit]]
 
         # --- Fallback: direct keyword match if no results ---
         if not results or len(results) == 0:
             logger.warning(f"No results from search engine for '{query}', using fallback match.")
-            query_lower = query.lower()
+            query_lower = query.lower() if query else ""
 
             # Match against key columns if they exist
-            match_columns = [c for c in ["symbol", "company_name", "sector", "industry", "name"] if c in df.columns]
+            match_columns = [c for c in ["symbol", "company_name", "sector", "industry", "name"] if c in working_df.columns]
 
-            if match_columns:
-                filtered_df = df[
-                    df.apply(
+            if match_columns and query_lower:
+                filtered_df = working_df[
+                    working_df.apply(
                         lambda row: any(
                             query_lower in str(row[col]).lower() for col in match_columns
                         ),
@@ -246,40 +341,63 @@ def search():
                 ]
 
                 # Create dummy scores for fallback results
-                results = [(i, 1.0) for i in filtered_df.index]
+                results = [(i, 1.0) for i in filtered_df.index[:limit]]
             else:
                 logger.error(f"No searchable columns found in dataset for fallback.")
                 results = []
 
         # --- Format results for JSON output ---
+        # First, get live stock data from database
+        with stock_app.db_manager.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT s1.* FROM stocks s1
+                JOIN (
+                    SELECT symbol, MAX(last_updated) as latest 
+                    FROM stocks 
+                    GROUP BY symbol
+                ) s2 ON s1.symbol = s2.symbol AND s1.last_updated = s2.latest
+            ''')
+            live_stocks = {row['symbol']: dict(row) for row in cursor.fetchall()}
+        
         formatted_results = []
-        for idx, (doc_idx, score) in enumerate(results, 1):
-            if doc_idx >= len(df):
+        for idx, (doc_idx, score) in enumerate(results[:limit], 1):
+            if doc_idx >= len(working_df):
                 continue
-            doc_data = df.iloc[doc_idx]
+            doc_data = working_df.iloc[doc_idx]
 
-            # Create preview text
-            preview_parts = []
-            for col in df.columns:
-                if col != 'tokens' and pd.notna(doc_data[col]):
-                    preview_parts.append(str(doc_data[col]))
-            preview = " ".join(preview_parts)
-            if len(preview) > 200:
-                preview = preview[:200] + "..."
-
-            formatted_results.append({
-                'rank': idx,
-                'doc_id': int(doc_idx),
-                'score': float(score),
-                'preview': preview.strip(),
-                'data': {col: doc_data[col] for col in df.columns if col != 'tokens'}
-            })
+            # Convert pandas types to Python native types for JSON serialization
+            result_item = {}
+            for col in working_df.columns:
+                if col != 'tokens':
+                    val = doc_data[col]
+                    if pd.isna(val):
+                        result_item[col] = None
+                    elif isinstance(val, (pd.Int64Dtype, pd.Int32Dtype)) or hasattr(val, 'item'):
+                        result_item[col] = int(val) if pd.notna(val) else None
+                    elif isinstance(val, (float, pd.Float64Dtype)):
+                        result_item[col] = float(val) if pd.notna(val) else None
+                    else:
+                        result_item[col] = str(val)
+            
+            # Merge with live stock data if available
+            symbol = result_item.get('symbol')
+            if symbol and symbol in live_stocks:
+                # Override with live data
+                result_item.update(live_stocks[symbol])
+            
+            # Add rank and score for reference
+            result_item['_rank'] = idx
+            result_item['_score'] = float(score)
+            
+            formatted_results.append(result_item)
 
         logger.info(f"Search completed for '{query}': {len(formatted_results)} results")
         return jsonify({
             'query': query,
             'total_results': len(formatted_results),
-            'results': formatted_results
+            'results': formatted_results,
+            'time': 0  # Add time for compatibility
         })
 
     except APIError:
@@ -404,5 +522,5 @@ def get_stock_details(symbol):
 
 if __name__ == '__main__':
     logger.info("Starting Flask application...")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=False, host='0.0.0.0', port=5000)
 

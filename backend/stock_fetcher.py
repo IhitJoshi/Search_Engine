@@ -12,7 +12,22 @@ from contextlib import contextmanager
 
 # Configuration
 DATABASE_NAME = "stocks.db"
-STOCK_SYMBOLS = ["AAPL", "MSFT", "GOOG", "AMZN", "TSLA", "NVDA", "META", "NFLX", "AMD", "INTC"]
+STOCK_SYMBOLS = [
+    # Technology - Big Tech > 500B
+    "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA", "AVGO", "TSM", "TCEHY",
+    
+    # Finance - Top Banks vs Fintech
+    "JPM", "BAC", "V", "MA", "PYPL", "SQ", "GS", "MS", "AXP", "INTU",
+    
+    # Energy - Renewable vs Non-Renewable
+    "NEE", "ENPH", "FSLR", "VWS.CO", "ORSTED.CO", "XOM", "CVX", "BP", "TTE", "SHEL",
+    
+    # Healthcare - Pharma vs Biotech
+    "JNJ", "PFE", "MRK", "NVS", "RHHBY", "AMGN", "GILD", "BIIB", "REGN", "MRNA",
+    
+    # Automotive - EV vs Traditional
+    "NIO", "RIVN", "LCID", "BYD", "TM", "HMC", "GM", "F", "STLA", "VWAGY"
+]
 UPDATE_INTERVAL = 60  # seconds
 
 # Setup logging

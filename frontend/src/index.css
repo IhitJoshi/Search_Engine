@@ -1,1 +1,19 @@
 @import "tailwindcss";
+
+* {
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%231e293b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20l-7-7 7-7 7 7-7 7z"/><path d="M12 13l-4-4 4-4 4 4-4 4z" fill="%233b82f6"/></svg>') 12 12, auto;
+}
+
+button,
+a,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+select,
+[role="button"],
+
+Loading/Progress State
+.cursor-progress,
+button:disabled {
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="%2394a3b8" stroke-width="2" fill="none"/><path d="M12 2a10 10 0 0 1 10 10" stroke="%233b82f6" stroke-width="2" fill="none" stroke-linecap="round"><animateTransform attributeName="transform" type="rotate" dur="1s" from="0 12 12" to="360 12 12" repeatCount="indefinite"/></path></svg>') 12 12, progress !important;
+}

@@ -25,8 +25,53 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Configuration
-STOCK_SYMBOLS = ["AAPL", "MSFT", "GOOG", "AMZN", "TSLA", "NVDA", "META", "NFLX", "AMD", "INTC"]
+# Configuration - 48 Stock Portfolio
+STOCK_SYMBOLS = [
+    # Technology - Big Tech > 500B
+    "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA", "AVGO", "TSM", "TCEHY",
+    
+    # Finance - Top Banks vs Fintech
+    "JPM", "BAC", "V", "MA", "PYPL", "SQ", "GS", "MS", "AXP", "INTU",
+    
+    # Energy - Renewable vs Non-Renewable
+    "NEE", "ENPH", "FSLR", "VWS.CO", "ORSTED.CO", "XOM", "CVX", "BP", "TTE", "SHEL",
+    
+    # Healthcare - Pharma vs Biotech
+    "JNJ", "PFE", "MRK", "NVS", "RHHBY", "AMGN", "GILD", "BIIB", "REGN", "MRNA",
+    
+    # Automotive - EV vs Traditional
+    "NIO", "RIVN", "LCID", "BYD", "TM", "HMC", "GM", "F", "STLA", "VWAGY"
+]
+
+# Sector mapping - maps stock symbols to our standardized sectors
+SECTOR_MAPPING = {
+    # Technology
+    "AAPL": "Technology", "MSFT": "Technology", "NVDA": "Technology", "AMZN": "Technology",
+    "GOOGL": "Technology", "META": "Technology", "TSLA": "Technology", "AVGO": "Technology",
+    "TSM": "Technology", "TCEHY": "Technology",
+    
+    # Financial Services
+    "JPM": "Financial Services", "BAC": "Financial Services", "V": "Financial Services",
+    "MA": "Financial Services", "PYPL": "Financial Services", "SQ": "Financial Services",
+    "GS": "Financial Services", "MS": "Financial Services", "AXP": "Financial Services",
+    "INTU": "Financial Services",
+    
+    # Energy
+    "NEE": "Energy", "ENPH": "Energy", "FSLR": "Energy", "VWS.CO": "Energy",
+    "ORSTED.CO": "Energy", "XOM": "Energy", "CVX": "Energy", "BP": "Energy", "TTE": "Energy",
+    "SHEL": "Energy",
+    
+    # Healthcare
+    "JNJ": "Healthcare", "PFE": "Healthcare", "MRK": "Healthcare", "NVS": "Healthcare",
+    "RHHBY": "Healthcare", "AMGN": "Healthcare", "GILD": "Healthcare", "BIIB": "Healthcare",
+    "REGN": "Healthcare", "MRNA": "Healthcare",
+    
+    # Automotive
+    "NIO": "Automotive", "RIVN": "Automotive", "LCID": "Automotive", "BYD": "Automotive",
+    "TM": "Automotive", "HMC": "Automotive", "GM": "Automotive", "F": "Automotive",
+    "STLA": "Automotive", "VWAGY": "Automotive"
+}
+
 UPDATE_INTERVAL = 60  # seconds
 
 class DatabaseManager:
@@ -56,20 +101,20 @@ class DatabaseManager:
             cursor.execute('''
                 CREATE TABLE stocks (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    symbol TEXT NOT NULL,
+                    symbol TEXT NOT NULL UNIQUE,
                     company_name TEXT,
                     sector TEXT,
                     price REAL,
                     volume INTEGER,
                     change_percent REAL,
                     summary TEXT,
-                    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE(symbol, last_updated)
+                    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
             
             # Create indexes for better performance
-            cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol_time ON stocks(symbol, last_updated)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_symbol ON stocks(symbol)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS idx_sector ON stocks(sector)')
             cursor.execute('CREATE INDEX IF NOT EXISTS idx_last_updated ON stocks(last_updated)')
             
             conn.commit()
@@ -104,10 +149,13 @@ class StockFetcher:
             # Get current volume
             current_volume = info.get('volume') or info.get('averageVolume')
             
+            # Use our standardized sector mapping instead of Yahoo Finance sector
+            sector = SECTOR_MAPPING.get(symbol, info.get('sector', 'Unknown'))
+            
             data = {
                 'symbol': symbol,
                 'company_name': info.get('longName', symbol),
-                'sector': info.get('sector', 'Unknown'),
+                'sector': sector,  # Use our standardized sector
                 'price': round(current_price, 2) if current_price else None,
                 'volume': current_volume,
                 'change_percent': round(change_percent, 2) if change_percent else None,
@@ -130,9 +178,9 @@ class StockFetcher:
             with self.db_manager.get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute('''
-                    INSERT INTO stocks 
+                    INSERT OR REPLACE INTO stocks 
                     (symbol, company_name, sector, price, volume, change_percent, summary, last_updated)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 ''', (
                     stock_data['symbol'],
                     stock_data['company_name'],
@@ -140,8 +188,7 @@ class StockFetcher:
                     stock_data['price'],
                     stock_data['volume'],
                     stock_data['change_percent'],
-                    stock_data['summary'],
-                    stock_data['last_updated']
+                    stock_data['summary']
                 ))
                 conn.commit()
                 
