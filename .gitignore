@@ -1,4 +1,80 @@
+# ---- Python / Flask ----
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.sqlite3
+*.db
+*.pkl
+*.pid
+*.csv
+*.log
+instance/
+.env
+venv/
+.env.*
+.DS_Store
 
-backend/app.log
-backend/stocks.db
-backend/app.log
+# Byte-compiled / cache
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.env/
+.venv/
+env/
+venv.bak/
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+
+# ---- Logs ----
+*.log
+logs/
+*.bak
+*.tmp
+
+# ---- Flask specific ----
+app.log
+*.db-journal
+
+# ---- Frontend (React) ----
+frontend/node_modules/
+frontend/build/
+frontend/.env
+frontend/.env.local
+frontend/.env.development
+frontend/.env.production
+frontend/.env.test
+
+# ---- VSCode ----
+.vscode/
+*.code-workspace
+
+# ---- System / OS ----
+Thumbs.db
+.DS_Store
+Icon?
+ehthumbs.db
+Desktop.ini
+
+# ---- Misc ----
+*.swp
+*.swo
+*.bak
+*.tmp
+*.orig
+*.out

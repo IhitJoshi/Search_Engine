@@ -141,6 +141,33 @@ def bm25_search(query_tokens: List[str], df: pd.DataFrame, inverted_index: Dict,
     
     query = " ".join(query_tokens)
     return search_engine.search(query, df, top_n)
+def search_stocks(filters):
+    import sqlite3
+    conn = sqlite3.connect("stocks.db")
+    cursor = conn.cursor()
+
+    query = "SELECT * FROM stocks WHERE 1=1"
+    params = []
+
+    for key, value in filters.items():
+        if isinstance(value, dict):
+            for op, val in value.items():
+                if op == ">":
+                    query += f" AND {key} > ?"
+                    params.append(val)
+                elif op == "<":
+                    query += f" AND {key} < ?"
+                    params.append(val)
+        else:
+            query += f" AND {key} = ?"
+            params.append(value)
+
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    conn.close()
+
+    # Convert rows to dicts (optional)
+    return [dict(zip([col[0] for col in cursor.description], row)) for row in rows]
 
 def main():
     """Test the search functionality"""

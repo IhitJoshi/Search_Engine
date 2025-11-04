@@ -9,11 +9,20 @@ from typing import Dict, Any
 from app import StockSearchApp
 import threading
 import sqlite3
-
-from search import search_engine, preprocess_query
+from ai_parser import parse_stock_query
+from search import search_engine, search_stocks
 from preprocessing import load_dataset, tokenize_all_columns
 from database import init_db, get_connection, hash_password
-
+from dotenv import load_dotenv
+import google.generativeai as genai
+import os
+from ai_filter import parse_query_to_filters
+load_dotenv()
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+models = genai.list_models(page_size=50)
+print([m.name for m in models])
+app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -519,6 +528,73 @@ def get_stock_details(symbol):
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/query", methods=["POST"])
+def ai_query():
+    try:
+        data = request.get_json()
+        user_query = data.get("query", "")
+        if not user_query:
+            return jsonify({"error": "Missing query"}), 400
+
+        print("[AI PARSER] Query:", user_query)
+        filters = parse_stock_query(user_query)
+        print("[AI PARSER] Filters:", filters)
+
+        # Pass the parsed filters to your search logic
+        results = search_stocks(filters)
+        return jsonify({"filters": filters, "results": results})
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+@app.route("/api/ai_search", methods=["POST"])
+def ai_stock_search():
+    try:
+        data = request.get_json()
+        user_query = data.get("query")
+
+        if not user_query:
+            return jsonify({"error": "No query provided"}), 400
+
+        filters = parse_query_to_filters(user_query)
+        if "error" in filters:
+            return jsonify(filters), 500
+
+        # Load dataset
+        df = pd.read_csv("data/dataset.csv")
+
+        # Track missing keys
+        missing_columns = []
+
+        # Apply filters dynamically
+        for key, condition in filters.items():
+            if key not in df.columns:
+                missing_columns.append(key)
+                continue  # Skip unknown columns
+
+            if isinstance(condition, dict):
+                for op, val in condition.items():
+                    if op == ">":
+                        df = df[df[key] > val]
+                    elif op == "<":
+                        df = df[df[key] < val]
+                    elif op == "=":
+                        df = df[df[key] == val]
+            else:
+                df = df[df[key].astype(str).str.contains(str(condition), case=False, na=False)]
+
+        results = df.head(10).to_dict(orient="records")
+        return jsonify({
+            "query": user_query,
+            "filters": filters,
+            "missing_columns": missing_columns,
+            "results": results
+        })
+
+    except Exception as e:
+        print("[ERROR] AI Search:", e)
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     logger.info("Starting Flask application...")
