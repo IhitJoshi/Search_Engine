@@ -16,13 +16,13 @@ from database import init_db, get_connection, hash_password
 from dotenv import load_dotenv
 import google.generativeai as genai
 import os
+import re
 from ai_filter import parse_query_to_filters
 load_dotenv()
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 models = genai.list_models(page_size=50)
 print([m.name for m in models])
-app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -548,53 +548,158 @@ def ai_query():
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+def parse_query_with_gemini(query):
+    # --- Replace with your Gemini call if you have it ---
+    return query.lower()
+STOCK_DATABASE = [
+    # Technology
+    {"name": "Apple Inc.", "symbol": "AAPL", "sector": "Technology"},
+    {"name": "Microsoft Corporation", "symbol": "MSFT", "sector": "Technology"},
+    {"name": "Alphabet Inc.", "symbol": "GOOGL", "sector": "Technology"},
+    {"name": "Amazon.com Inc.", "symbol": "AMZN", "sector": "Consumer Discretionary"},
+    {"name": "NVIDIA Corporation", "symbol": "NVDA", "sector": "Technology"},
+    {"name": "Meta Platforms Inc.", "symbol": "META", "sector": "Technology"},
+    {"name": "Tesla Inc.", "symbol": "TSLA", "sector": "Automotive"},
+    {"name": "Adobe Inc.", "symbol": "ADBE", "sector": "Technology"},
+    {"name": "Intel Corporation", "symbol": "INTC", "sector": "Technology"},
+    {"name": "Oracle Corporation", "symbol": "ORCL", "sector": "Technology"},
+
+    # Finance
+    {"name": "JPMorgan Chase & Co.", "symbol": "JPM", "sector": "Financials"},
+    {"name": "Bank of America Corporation", "symbol": "BAC", "sector": "Financials"},
+    {"name": "Wells Fargo & Company", "symbol": "WFC", "sector": "Financials"},
+    {"name": "Goldman Sachs Group", "symbol": "GS", "sector": "Financials"},
+    {"name": "Citigroup Inc.", "symbol": "C", "sector": "Financials"},
+    {"name": "Visa Inc.", "symbol": "V", "sector": "Financials"},
+    {"name": "Mastercard Incorporated", "symbol": "MA", "sector": "Financials"},
+
+    # Healthcare
+    {"name": "Johnson & Johnson", "symbol": "JNJ", "sector": "Healthcare"},
+    {"name": "Pfizer Inc.", "symbol": "PFE", "sector": "Healthcare"},
+    {"name": "Merck & Co.", "symbol": "MRK", "sector": "Healthcare"},
+    {"name": "UnitedHealth Group", "symbol": "UNH", "sector": "Healthcare"},
+    {"name": "AbbVie Inc.", "symbol": "ABBV", "sector": "Healthcare"},
+    {"name": "Eli Lilly and Company", "symbol": "LLY", "sector": "Healthcare"},
+
+    # Energy
+    {"name": "Exxon Mobil Corporation", "symbol": "XOM", "sector": "Energy"},
+    {"name": "Chevron Corporation", "symbol": "CVX", "sector": "Energy"},
+    {"name": "Shell PLC", "symbol": "SHEL", "sector": "Energy"},
+    {"name": "BP p.l.c.", "symbol": "BP", "sector": "Energy"},
+    {"name": "TotalEnergies SE", "symbol": "TTE", "sector": "Energy"},
+
+    # Retail & Consumer
+    {"name": "Walmart Inc.", "symbol": "WMT", "sector": "Retail"},
+    {"name": "The Home Depot, Inc.", "symbol": "HD", "sector": "Retail"},
+    {"name": "Costco Wholesale Corporation", "symbol": "COST", "sector": "Retail"},
+    {"name": "McDonald's Corporation", "symbol": "MCD", "sector": "Consumer"},
+    {"name": "Nike, Inc.", "symbol": "NKE", "sector": "Consumer"},
+    {"name": "Starbucks Corporation", "symbol": "SBUX", "sector": "Consumer"},
+
+    # Indian Market
+    {"name": "Reliance Industries Ltd.", "symbol": "RELIANCE.NS", "sector": "Energy"},
+    {"name": "Infosys Ltd.", "symbol": "INFY.NS", "sector": "Technology"},
+    {"name": "Tata Consultancy Services Ltd.", "symbol": "TCS.NS", "sector": "Technology"},
+    {"name": "HDFC Bank Ltd.", "symbol": "HDFCBANK.NS", "sector": "Financials"},
+    {"name": "ICICI Bank Ltd.", "symbol": "ICICIBANK.NS", "sector": "Financials"},
+    {"name": "State Bank of India", "symbol": "SBIN.NS", "sector": "Financials"},
+    {"name": "Bharti Airtel Ltd.", "symbol": "BHARTIARTL.NS", "sector": "Telecom"},
+    {"name": "ITC Ltd.", "symbol": "ITC.NS", "sector": "Consumer"},
+    {"name": "Hindustan Unilever Ltd.", "symbol": "HINDUNILVR.NS", "sector": "Consumer"},
+    {"name": "Adani Enterprises Ltd.", "symbol": "ADANIENT.NS", "sector": "Infrastructure"},
+]
+
+# ---------------------------------------------
+# Helper to match query keywords
+# ---------------------------------------------
+def filter_stocks_by_query(query):
+    query_lower = query.lower()
+
+    matched = []
+    for stock in STOCK_DATABASE:
+        if (
+            query_lower in stock["name"].lower()
+            or query_lower in stock["symbol"].lower()
+            or query_lower in stock["sector"].lower()
+        ):
+            matched.append(stock)
+
+    # Keyword-based filters
+    keyword_map = {
+        "tech": "Technology",
+        "software": "Technology",
+        "bank": "Financials",
+        "finance": "Financials",
+        "health": "Healthcare",
+        "energy": "Energy",
+        "oil": "Energy",
+        "retail": "Retail",
+        "consumer": "Consumer",
+        "india": ".NS",
+        "indian": ".NS",
+    }
+
+    for key, sector in keyword_map.items():
+        if key in query_lower:
+            matched += [s for s in STOCK_DATABASE if sector in (s["sector"] or s["symbol"])]
+
+    # Remove duplicates
+    seen = set()
+    unique = []
+    for m in matched:
+        if m["symbol"] not in seen:
+            unique.append(m)
+            seen.add(m["symbol"])
+    return unique
+
+# ---------------------------------------------
+# AI Search Route (main logic)
+# ---------------------------------------------
 @app.route("/api/ai_search", methods=["POST"])
-def ai_stock_search():
+def ai_search():
     try:
         data = request.get_json()
-        user_query = data.get("query")
+        query = data.get("query", "").strip()
 
-        if not user_query:
-            return jsonify({"error": "No query provided"}), 400
+        if not query:
+            return jsonify({"error": "Empty query"}), 400
 
-        filters = parse_query_to_filters(user_query)
-        if "error" in filters:
-            return jsonify(filters), 500
+        # Reject gibberish queries (no alphabets or too short)
+        if len(query) < 3 or not re.search("[a-zA-Z]", query):
+            return jsonify({"results": []})
 
-        # Load dataset
-        df = pd.read_csv("data/dataset.csv")
+        filtered_stocks = filter_stocks_by_query(query)
 
-        # Track missing keys
-        missing_columns = []
+        if not filtered_stocks:
+            return jsonify({"results": []})
 
-        # Apply filters dynamically
-        for key, condition in filters.items():
-            if key not in df.columns:
-                missing_columns.append(key)
-                continue  # Skip unknown columns
+        results = []
+        for stock in filtered_stocks[:10]:  # Limit 10 to prevent slowdowns
+            try:
+                ticker = yf.Ticker(stock["symbol"])
+                info = ticker.info
 
-            if isinstance(condition, dict):
-                for op, val in condition.items():
-                    if op == ">":
-                        df = df[df[key] > val]
-                    elif op == "<":
-                        df = df[df[key] < val]
-                    elif op == "=":
-                        df = df[df[key] == val]
-            else:
-                df = df[df[key].astype(str).str.contains(str(condition), case=False, na=False)]
+                results.append({
+                    "company_name": stock["name"],
+                    "symbol": stock["symbol"],
+                    "sector": stock["sector"],
+                    "price": info.get("currentPrice") or info.get("regularMarketPrice"),
+                    "volume": info.get("volume"),
+                    "change_percent": info.get("regularMarketChangePercent"),
+                    "changed": "up" if (info.get("regularMarketChange", 0) or 0) > 0 else "down",
+                })
+            except Exception as e:
+                print(f"Error fetching {stock['symbol']}: {e}")
+                continue
 
-        results = df.head(10).to_dict(orient="records")
-        return jsonify({
-            "query": user_query,
-            "filters": filters,
-            "missing_columns": missing_columns,
-            "results": results
-        })
+        return jsonify({"results": results})
 
     except Exception as e:
-        print("[ERROR] AI Search:", e)
+        print("AI Search Error:", e)
         return jsonify({"error": str(e)}), 500
+
+
+
 
 if __name__ == '__main__':
     logger.info("Starting Flask application...")
