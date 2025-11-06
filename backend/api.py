@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 import os
 import re
+import yfinance as yf
 from ai_filter import parse_query_to_filters
 load_dotenv()
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
