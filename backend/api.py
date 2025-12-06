@@ -1,5 +1,7 @@
 
 
+from curses import raw
+from http import client
 from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 import pandas as pd
@@ -17,6 +19,7 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 import os
 import re
+import json
 import yfinance as yf
 from ai_filter import parse_query_to_filters
 load_dotenv()
@@ -658,6 +661,7 @@ def filter_stocks_by_query(query):
 # ---------------------------------------------
 @app.route("/api/ai_search", methods=["POST"])
 def ai_search():
+    print("🔥 API HIT: /api/ai_search") 
     try:
         data = request.get_json()
         query = data.get("query", "").strip()
@@ -665,42 +669,85 @@ def ai_search():
         if not query:
             return jsonify({"error": "Empty query"}), 400
 
-        # Reject gibberish queries (no alphabets or too short)
-        if len(query) < 3 or not re.search("[a-zA-Z]", query):
-            return jsonify({"results": []})
+        # ------ Step 1: Let Gemini interpret query -------
+        prompt = f"""
+        You are an expert financial analyst.
+        User query: "{query}"
 
-        filtered_stocks = filter_stocks_by_query(query)
+        Your job: Understand the intent and return structured JSON.
 
-        if not filtered_stocks:
-            return jsonify({"results": []})
+        Return JSON ONLY in this format:
 
+        {{
+          "summary": "<short 2–3 line analysis>",
+          "companies": [
+            {{ "symbol": "AAPL", "name": "Apple Inc" }},
+            {{ "symbol": "TSLA", "name": "Tesla" }},
+            ...
+          ]
+        }}
+
+        Rules:
+        - Include US + Indian companies when relevant.
+        - Symbols MUST be real and usable in yfinance.
+        - Maximum 12 companies.
+        - If the query is vague (example: “profitable stocks”, “high growth stocks”, 
+          “good companies”, “top performers”):
+              1. Identify the most relevant sectors,
+              2. Select 8–12 well-known profitable stocks,
+              3. ALWAYS return some companies (never leave empty).
+        """
+
+        ai_res = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        print("🔥 RAW AI RESPONSE:", ai_res.choices[0].message["content"])
+        raw = ai_res.choices[0].message["content"]
+
+        print("\n\n=== DEBUG RAW AI RESPONSE ===\n", raw, "\n\n")
+
+        parsed = json.loads(raw)
+        summary = parsed.get("summary", "")
+        companies = parsed.get("companies", [])
+
+        if not companies:
+            return jsonify({
+                "summary": summary,
+                "results": [],
+                "message": "AI returned no companies."
+            })
+
+        # ------ Step 2: Fetch live stock data -------
         results = []
-        for stock in filtered_stocks[:10]:  # Limit 10 to prevent slowdowns
-            try:
-                ticker = yf.Ticker(stock["symbol"])
-                info = ticker.info
+        for company in companies:
+            symbol = company.get("symbol")
+            name = company.get("name")
 
-                results.append({
-                    "company_name": stock["name"],
-                    "symbol": stock["symbol"],
-                    "sector": stock["sector"],
-                    "price": info.get("currentPrice") or info.get("regularMarketPrice"),
-                    "volume": info.get("volume"),
-                    "change_percent": info.get("regularMarketChangePercent"),
-                    "changed": "up" if (info.get("regularMarketChange", 0) or 0) > 0 else "down",
-                })
+            try:
+                ticker = yf.Ticker(symbol)
+                info = ticker.info
             except Exception as e:
-                print(f"Error fetching {stock['symbol']}: {e}")
+                print(f"YFinance fail for {symbol}: {e}")
                 continue
 
-        return jsonify({"results": results})
+            results.append({
+                "symbol": symbol,
+                "name": name,
+                "price": info.get("currentPrice") or info.get("regularMarketPrice"),
+                "volume": info.get("volume"),
+                "change_percent": info.get("regularMarketChangePercent"),
+                "changed": "up" if (info.get("regularMarketChange", 0) or 0) > 0 else "down"
+            })
+
+        return jsonify({
+            "summary": summary,
+            "results": results
+        })
 
     except Exception as e:
         print("AI Search Error:", e)
-        return jsonify({"error": str(e)}), 500
-
-
-
+        return jsonify({"error": "Internal Server Error"}), 500
 
 if __name__ == '__main__':
     logger.info("Starting Flask application...")
