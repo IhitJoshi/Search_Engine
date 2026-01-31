@@ -106,6 +106,8 @@ class DatabaseManager:
                     sector TEXT,
                     price REAL,
                     volume INTEGER,
+                    average_volume INTEGER,
+                    market_cap REAL,
                     change_percent REAL,
                     summary TEXT,
                     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -118,7 +120,7 @@ class DatabaseManager:
             cursor.execute('CREATE INDEX IF NOT EXISTS idx_last_updated ON stocks(last_updated)')
             
             conn.commit()
-        logger.info("Database tables created with latest schema")
+        logger.info("Database tables created with enhanced schema")
 
 class StockFetcher:
     """Handles stock data fetching from Yahoo Finance"""
@@ -146,8 +148,12 @@ class StockFetcher:
                 if current_price and previous_close else None
             )
             
-            # Get current volume
-            current_volume = info.get('volume') or info.get('averageVolume')
+            # Get current volume and average volume
+            current_volume = info.get('volume') or info.get('regularMarketVolume')
+            average_volume = info.get('averageVolume') or info.get('averageVolume10days')
+            
+            # Get market cap
+            market_cap = info.get('marketCap')
             
             # Use our standardized sector mapping instead of Yahoo Finance sector
             sector = SECTOR_MAPPING.get(symbol, info.get('sector', 'Unknown'))
@@ -158,6 +164,8 @@ class StockFetcher:
                 'sector': sector,  # Use our standardized sector
                 'price': round(current_price, 2) if current_price else None,
                 'volume': current_volume,
+                'average_volume': average_volume,
+                'market_cap': market_cap,
                 'change_percent': round(change_percent, 2) if change_percent else None,
                 'summary': (info.get('longBusinessSummary') or 'No summary available')[:500],
                 'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -179,14 +187,17 @@ class StockFetcher:
                 cursor = conn.cursor()
                 cursor.execute('''
                     INSERT OR REPLACE INTO stocks 
-                    (symbol, company_name, sector, price, volume, change_percent, summary, last_updated)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    (symbol, company_name, sector, price, volume, average_volume, 
+                     market_cap, change_percent, summary, last_updated)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 ''', (
                     stock_data['symbol'],
                     stock_data['company_name'],
                     stock_data['sector'],
                     stock_data['price'],
                     stock_data['volume'],
+                    stock_data['average_volume'],
+                    stock_data['market_cap'],
                     stock_data['change_percent'],
                     stock_data['summary']
                 ))

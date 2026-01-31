@@ -1,7 +1,5 @@
 
 
-from curses import raw
-from http import client
 from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 import pandas as pd
@@ -16,16 +14,18 @@ from search import search_engine, search_stocks
 from preprocessing import load_dataset, tokenize_all_columns
 from database import init_db, get_connection, hash_password
 from dotenv import load_dotenv
-import google.generativeai as genai
 import os
 import re
 import json
 import yfinance as yf
 from ai_filter import parse_query_to_filters
+# Import BM25 stock ranking system
+from stock_tokenizer import stock_tokenizer, query_tokenizer
+from bm25_stock_ranker import create_ranker
+# Import response synthesizer
+from response_synthesizer import response_synthesizer
+from datetime import datetime
 load_dotenv()
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-models = genai.list_models(page_size=50)
-print([m.name for m in models])
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -41,7 +41,11 @@ CORS(app,
      supports_credentials=True,
      origins=[
     "http://localhost:5173",
-    "http://127.0.0.1:5173"
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    "http://localhost:5175",
+    "http://127.0.0.1:5175"
 ],  # Frontend URLs
      allow_headers=["Content-Type", "Authorization"],
      methods=["GET", "POST", "PUT", "DELETE"])
@@ -49,11 +53,24 @@ CORS(app,
 # Initialize StockSearchApp
 stock_app = StockSearchApp()
 
+# Initialize BM25 stock ranker (safe defaults: k1=1.5, b=0.75)
+# WHY: k1=1.5 balances term frequency, b=0.75 provides moderate length normalization
+stock_ranker = create_ranker(
+    stock_tokenizer=stock_tokenizer,
+    query_tokenizer=query_tokenizer,
+    k1=1.5,  # Term frequency saturation - good for stock signals
+    b=0.75   # Document length normalization - moderate penalty
+)
+
 def initialize_stock_system():
-    """Initialize stock system in background"""
+    """Initialize stock system in background, then start the fetcher"""
     try:
+        # First, initialize the system (creates tables)
         stock_app.initialize_system()
         logger.info("Stock system initialization completed")
+        
+        # Only start the background fetcher AFTER initialization is complete
+        run_background_fetcher()
     except Exception as e:
         logger.error(f"Stock system initialization failed: {e}")
 
@@ -65,7 +82,7 @@ def run_background_fetcher():
         # Finance
         "JPM", "BAC", "V", "MA", "PYPL", "SQ", "GS", "MS", "AXP", "INTU",
         # Energy
-    "NEE", "ENPH", "FSLR", "VWS.CO", "ORSTED.CO", "XOM", "CVX", "BP", "TTE", "SHEL",
+        "NEE", "ENPH", "FSLR", "VWS.CO", "ORSTED.CO", "XOM", "CVX", "BP", "TTE", "SHEL",
         # Healthcare
         "JNJ", "PFE", "MRK", "NVS", "RHHBY", "AMGN", "GILD", "BIIB", "REGN", "MRNA",
         # Automotive
@@ -73,9 +90,9 @@ def run_background_fetcher():
     ]
     stock_app.stock_fetcher.run_continuous_fetch(all_stocks, 60)
 
-# Run initialization and background fetcher in separate threads
+# Run initialization in a single background thread
+# The background fetcher will start automatically after initialization completes
 threading.Thread(target=initialize_stock_system, daemon=True).start()
-threading.Thread(target=run_background_fetcher, daemon=True).start()
 
 # Initialize database
 init_db()
@@ -277,7 +294,17 @@ def check_auth():
 @app.route('/api/search', methods=['POST'])
 @require_auth()
 def search():
-    """Search endpoint with authentication"""
+    """
+    Search endpoint with BM25-based stock ranking.
+    
+    FLOW:
+    1. Extract query and filters from request
+    2. Fetch live stock data from database
+    3. Apply sector/filters if specified
+    4. Tokenize query and stocks
+    5. Rank with BM25
+    6. Return top-K results
+    """
     try:
         data = request.get_json()
         if not data:
@@ -293,131 +320,101 @@ def search():
 
         logger.info(f"Received search query: '{query}', sector: '{sector_filter}', limit: {limit}")
 
-        # --- If sector filter is provided, filter by sector first ---
-        working_df = df
-        if sector_filter:
-            # Filter stocks by sector from the database
-            with stock_app.db_manager.get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute('''
-                    SELECT DISTINCT symbol FROM stocks 
-                    WHERE sector = ? 
-                    ORDER BY last_updated DESC
-                ''', (sector_filter,))
-                sector_symbols = [row['symbol'] for row in cursor.fetchall()]
-            
-            if sector_symbols and 'symbol' in df.columns:
-                # Filter dataframe to only include stocks from this sector
-                working_df = df[df['symbol'].isin(sector_symbols)]
-                logger.info(f"Filtered to {len(working_df)} stocks in sector '{sector_filter}'")
-            else:
-                logger.warning(f"No stocks found for sector '{sector_filter}'")
-                working_df = df[df.index < 0]  # Empty dataframe
-        else:
-            # No sector filter - get ALL stocks from database
-            with stock_app.db_manager.get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute('''
-                    SELECT DISTINCT symbol FROM stocks 
-                    ORDER BY last_updated DESC
-                ''')
-                all_symbols = [row['symbol'] for row in cursor.fetchall()]
-            
-            if all_symbols and 'symbol' in df.columns:
-                # Filter dataframe to only include stocks we have in database
-                working_df = df[df['symbol'].isin(all_symbols)]
-                logger.info(f"Showing all stocks: {len(working_df)} stocks in database")
-        
-        # --- Primary: use search engine ---
-        if query:
-            results = search_engine.search(query, working_df, top_n=limit)
-        else:
-            # If no query, just return all stocks from the filtered sector
-            results = [(i, 1.0) for i in working_df.index[:limit]]
-
-        # --- Fallback: direct keyword match if no results ---
-        if not results or len(results) == 0:
-            logger.warning(f"No results from search engine for '{query}', using fallback match.")
-            query_lower = query.lower() if query else ""
-
-            # Match against key columns if they exist
-            match_columns = [c for c in ["symbol", "company_name", "sector", "industry", "name"] if c in working_df.columns]
-
-            if match_columns and query_lower:
-                filtered_df = working_df[
-                    working_df.apply(
-                        lambda row: any(
-                            query_lower in str(row[col]).lower() for col in match_columns
-                        ),
-                        axis=1,
-                    )
-                ]
-
-                # Create dummy scores for fallback results
-                results = [(i, 1.0) for i in filtered_df.index[:limit]]
-            else:
-                logger.error(f"No searchable columns found in dataset for fallback.")
-                results = []
-
-        # --- Format results for JSON output ---
-        # First, get live stock data from database
+        # --- STEP 1: Fetch live stock data from database ---
         with stock_app.db_manager.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute('''
-                SELECT s1.* FROM stocks s1
-                JOIN (
-                    SELECT symbol, MAX(last_updated) as latest 
-                    FROM stocks 
-                    GROUP BY symbol
-                ) s2 ON s1.symbol = s2.symbol AND s1.last_updated = s2.latest
-            ''')
-            live_stocks = {row['symbol']: dict(row) for row in cursor.fetchall()}
+            
+            if sector_filter:
+                # Filter by specific sector
+                cursor.execute('''
+                    SELECT s1.* FROM stocks s1
+                    JOIN (
+                        SELECT symbol, MAX(last_updated) as latest 
+                        FROM stocks 
+                        WHERE sector = ?
+                        GROUP BY symbol
+                    ) s2 ON s1.symbol = s2.symbol AND s1.last_updated = s2.latest
+                    ORDER BY s1.last_updated DESC
+                ''', (sector_filter,))
+            else:
+                # Get all latest stock data
+                cursor.execute('''
+                    SELECT s1.* FROM stocks s1
+                    JOIN (
+                        SELECT symbol, MAX(last_updated) as latest 
+                        FROM stocks 
+                        GROUP BY symbol
+                    ) s2 ON s1.symbol = s2.symbol AND s1.last_updated = s2.latest
+                    ORDER BY s1.last_updated DESC
+                ''')
+            
+            live_stocks = [dict(row) for row in cursor.fetchall()]
         
-        formatted_results = []
-        for idx, (doc_idx, score) in enumerate(results[:limit], 1):
-            if doc_idx >= len(working_df):
-                continue
-            doc_data = working_df.iloc[doc_idx]
-
-            # Convert pandas types to Python native types for JSON serialization
-            result_item = {}
-            for col in working_df.columns:
-                if col != 'tokens':
-                    val = doc_data[col]
-                    if pd.isna(val):
-                        result_item[col] = None
-                    elif isinstance(val, (pd.Int64Dtype, pd.Int32Dtype)) or hasattr(val, 'item'):
-                        result_item[col] = int(val) if pd.notna(val) else None
-                    elif isinstance(val, (float, pd.Float64Dtype)):
-                        result_item[col] = float(val) if pd.notna(val) else None
-                    else:
-                        result_item[col] = str(val)
+        logger.info(f"Fetched {len(live_stocks)} live stock snapshots")
+        
+        if not live_stocks:
+            logger.warning("No stock data available in database")
+            return jsonify({
+                'query': query,
+                'total_results': 0,
+                'results': [],
+                'message': 'No stock data available. Please wait for data to be fetched.'
+            })
+        
+        # --- STEP 2: Use BM25 ranking if query provided ---
+        if query:
+            # Use BM25 ranker for intent-based search
+            ranked_results = stock_ranker.rank_live_stocks(
+                query=query,
+                live_stocks=live_stocks,
+                top_k=limit
+            )
             
-            # Merge with live stock data if available
-            symbol = result_item.get('symbol')
-            if symbol and symbol in live_stocks:
-                # Override with live data
-                result_item.update(live_stocks[symbol])
+            # Convert ranker output to response synthesizer input format
+            # WHY: Ranker returns tuples, synthesizer expects dicts with tokens
+            formatted_for_synthesizer = []
+            for symbol, score, stock_data in ranked_results:
+                # Preserve all stock data and add score + tokens
+                result_dict = {**stock_data}  # Copy all fields
+                result_dict['_score'] = score
+                # Tokens are already in stock_data from ranker
+                formatted_for_synthesizer.append(result_dict)
             
-            # Add rank and score for reference
-            result_item['_rank'] = idx
-            result_item['_score'] = float(score)
+            # Use response synthesizer to create structured response
+            # WHY: Separates ranking from response formatting
+            response = response_synthesizer.synthesize_response(
+                query=query,
+                ranked_results=formatted_for_synthesizer,
+                ranking_method='bm25',
+                metadata={'sector_filter': sector_filter} if sector_filter else None
+            )
             
-            formatted_results.append(result_item)
-
-        logger.info(f"Search completed for '{query}': {len(formatted_results)} results")
-        return jsonify({
-            'query': query,
-            'total_results': len(formatted_results),
-            'results': formatted_results,
-            'time': 0  # Add time for compatibility
-        })
+            logger.info(f"BM25 ranking completed: {len(response['results'])} results")
+            return jsonify(response)
+        else:
+            # No query - return all stocks using synthesizer for consistency
+            formatted_for_synthesizer = []
+            for stock_data in live_stocks[:limit]:
+                result_dict = {**stock_data}
+                result_dict['_score'] = 1.0
+                result_dict['tokens'] = []  # No matching tokens
+                formatted_for_synthesizer.append(result_dict)
+            
+            response = response_synthesizer.synthesize_response(
+                query=query or '',
+                ranked_results=formatted_for_synthesizer,
+                ranking_method='default',
+                metadata={'sector_filter': sector_filter} if sector_filter else None
+            )
+            
+            logger.info(f"Returning all stocks: {len(response['results'])} results")
+            return jsonify(response)
 
     except APIError:
         raise
     except Exception as e:
-        logger.error(f"Search error: {e}")
-        raise APIError("Search failed")
+        logger.error(f"Search error: {e}", exc_info=True)
+        raise APIError(f"Search failed: {str(e)}")
 
 @app.route("/api/stocks", methods=["GET"])
 def get_stocks():
@@ -657,97 +654,145 @@ def filter_stocks_by_query(query):
     return unique
 
 # ---------------------------------------------
-# AI Search Route (main logic)
+# AI Search Route - BM25 Based (NO LLM)
 # ---------------------------------------------
+# DESIGN RATIONALE:
+# - Uses BM25 for deterministic, explainable ranking
+# - Token-based explanations instead of AI-generated text
+# - Safer for financial applications (no hallucinations)
+# - Fast and reliable (no external API calls)
+
 @app.route("/api/ai_search", methods=["POST"])
 def ai_search():
-    print("🔥 API HIT: /api/ai_search") 
+    """
+    Search endpoint using BM25 ranking with deterministic response generation.
+    NO LLM USAGE - All explanations come from static token mappings.
+    """
+    logger.info("API HIT: /api/ai_search")
+    
     try:
         data = request.get_json()
+        if not data:
+            return jsonify({"error": "No JSON data provided"}), 400
+            
         query = data.get("query", "").strip()
 
         if not query:
             return jsonify({"error": "Empty query"}), 400
 
-        # ------ Step 1: Let Gemini interpret query -------
-        prompt = f"""
-        You are an expert financial analyst.
-        User query: "{query}"
+        if len(query) > 500:
+            return jsonify({"error": "Query too long"}), 400
 
-        Your job: Understand the intent and return structured JSON.
+        logger.info(f"Processing search query: '{query}'")
 
-        Return JSON ONLY in this format:
+        # --- STEP 1: Fetch live stock data from database ---
+        with stock_app.db_manager.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT s1.* FROM stocks s1
+                JOIN (
+                    SELECT symbol, MAX(last_updated) as latest 
+                    FROM stocks 
+                    GROUP BY symbol
+                ) s2 ON s1.symbol = s2.symbol AND s1.last_updated = s2.latest
+                ORDER BY s1.last_updated DESC
+            ''')
+            live_stocks = [dict(row) for row in cursor.fetchall()]
 
-        {{
-          "summary": "<short 2–3 line analysis>",
-          "companies": [
-            {{ "symbol": "AAPL", "name": "Apple Inc" }},
-            {{ "symbol": "TSLA", "name": "Tesla" }},
-            ...
-          ]
-        }}
-
-        Rules:
-        - Include US + Indian companies when relevant.
-        - Symbols MUST be real and usable in yfinance.
-        - Maximum 12 companies.
-        - If the query is vague (example: “profitable stocks”, “high growth stocks”, 
-          “good companies”, “top performers”):
-              1. Identify the most relevant sectors,
-              2. Select 8–12 well-known profitable stocks,
-              3. ALWAYS return some companies (never leave empty).
-        """
-
-        ai_res = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}]
-        )
-        print("🔥 RAW AI RESPONSE:", ai_res.choices[0].message["content"])
-        raw = ai_res.choices[0].message["content"]
-
-        print("\n\n=== DEBUG RAW AI RESPONSE ===\n", raw, "\n\n")
-
-        parsed = json.loads(raw)
-        summary = parsed.get("summary", "")
-        companies = parsed.get("companies", [])
-
-        if not companies:
+        if not live_stocks:
+            logger.warning("No stock data available in database")
             return jsonify({
-                "summary": summary,
-                "results": [],
-                "message": "AI returned no companies."
+                "query": query,
+                "summary": "No stock data available. Please wait for data to be fetched.",
+                "results": []
             })
 
-        # ------ Step 2: Fetch live stock data -------
+        logger.info(f"Fetched {len(live_stocks)} live stock snapshots")
+
+        # --- STEP 2: Rank stocks using BM25 ---
+        ranked_results = stock_ranker.rank_live_stocks(
+            query=query,
+            live_stocks=live_stocks,
+            top_k=12
+        )
+
+        if not ranked_results:
+            return jsonify({
+                "query": query,
+                "summary": f"No matching stocks found for '{query}'.",
+                "results": []
+            })
+
+        # --- STEP 3: Format results using response synthesizer ---
+        formatted_for_synthesizer = []
+        for symbol, score, stock_data in ranked_results:
+            result_dict = {**stock_data}
+            result_dict['_score'] = score
+            formatted_for_synthesizer.append(result_dict)
+
+        response = response_synthesizer.synthesize_response(
+            query=query,
+            ranked_results=formatted_for_synthesizer,
+            ranking_method='bm25'
+        )
+
+        # --- STEP 4: Generate deterministic summary ---
+        summary = _generate_deterministic_summary(query, response['results'])
+
+        # --- STEP 5: Format final response for frontend ---
         results = []
-        for company in companies:
-            symbol = company.get("symbol")
-            name = company.get("name")
-
-            try:
-                ticker = yf.Ticker(symbol)
-                info = ticker.info
-            except Exception as e:
-                print(f"YFinance fail for {symbol}: {e}")
-                continue
-
+        for item in response['results']:
             results.append({
-                "symbol": symbol,
-                "name": name,
-                "price": info.get("currentPrice") or info.get("regularMarketPrice"),
-                "volume": info.get("volume"),
-                "change_percent": info.get("regularMarketChangePercent"),
-                "changed": "up" if (info.get("regularMarketChange", 0) or 0) > 0 else "down"
+                "symbol": item.get('symbol'),
+                "name": item.get('company_name', item.get('symbol')),
+                "price": item.get('metrics', {}).get('price'),
+                "volume": item.get('metrics', {}).get('volume'),
+                "change_percent": item.get('metrics', {}).get('change_percent'),
+                "changed": "up" if (item.get('metrics', {}).get('change_percent') or 0) > 0 else "down",
+                "rank": item.get('rank'),
+                "score": item.get('score'),
+                "reasons": item.get('reasons', [])
             })
+
+        logger.info(f"Returning {len(results)} ranked results for query: '{query}'")
 
         return jsonify({
+            "query": query,
             "summary": summary,
-            "results": results
+            "results": results,
+            "timestamp": datetime.now().isoformat() + 'Z'
         })
 
     except Exception as e:
-        print("AI Search Error:", e)
-        return jsonify({"error": "Internal Server Error"}), 500
+        logger.error(f"AI Search Error: {e}", exc_info=True)
+        return jsonify({"error": "Search failed. Please try again."}), 500
+
+
+
+def _generate_deterministic_summary(query: str, results: list) -> str:
+    """Generate a deterministic, rule-based summary from search results."""
+    if not results:
+        return f"No stocks found matching '{query}'."
+    
+    num_results = len(results)
+    top_symbols = [r.get('symbol', 'Unknown') for r in results[:5]]
+    
+    all_reasons = set()
+    for r in results:
+        for reason in r.get('reasons', []):
+            all_reasons.add(reason)
+    
+    summary_parts = [f"Found {num_results} stocks matching '{query}'."]
+    
+    if top_symbols:
+        summary_parts.append(f"Top matches: {', '.join(top_symbols)}.")
+    
+    if all_reasons:
+        top_reasons = list(all_reasons)[:3]
+        summary_parts.append(f"Key signals: {'; '.join(top_reasons)}.")
+    
+    return " ".join(summary_parts)
+
 
 if __name__ == '__main__':
     logger.info("Starting Flask application...")
