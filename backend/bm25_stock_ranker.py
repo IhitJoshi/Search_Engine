@@ -18,6 +18,7 @@ import math
 import logging
 from typing import List, Tuple, Dict, Any
 from collections import Counter, defaultdict
+from query_filter_engine import query_filter_engine
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +72,9 @@ class StockBM25Ranker:
         
         WHY: This is the core ranking function that matches user intent
         to stock signals using BM25 scoring.
+        
+        NOTE: Filtering happens BEFORE this function is called.
+        This function only performs BM25 ranking on pre-filtered stocks.
         
         Args:
             query_tokens: List of tokens from user query (from QueryTokenizer)
@@ -273,10 +277,17 @@ class RealTimeStockRanker:
         top_k: int = 10
     ) -> List[Tuple[str, float, Dict[str, Any]]]:
         """
-        Complete pipeline: query → tokens → BM25 → ranked results.
+        Complete pipeline: query → filter → tokens → BM25 → soft filter → ranked results.
         
         WHY: This is the main entry point for the API.
         Takes raw query and raw stock data, returns ranked results.
+        
+        ARCHITECTURE:
+        1. Tokenize stocks first (needed for filtering)
+        2. Apply hard constraint filters from query (sector)
+        3. Tokenize query for BM25
+        4. Rank filtered stocks with BM25
+        5. Apply soft filters (growth direction) to remove contradicting results
         
         Args:
             query: User's natural language query
@@ -288,15 +299,8 @@ class RealTimeStockRanker:
         """
         logger.info(f"Ranking query: '{query}' across {len(live_stocks)} stocks")
         
-        # STEP 1: Convert query to tokens
-        query_tokens = self.query_tokenizer.tokenize_query(query)
-        logger.info(f"Query tokens: {query_tokens}")
-        
-        if not query_tokens:
-            logger.warning("No valid query tokens generated")
-            return []
-        
-        # STEP 2: Tokenize all stock snapshots
+        # STEP 1: Tokenize all stock snapshots FIRST
+        # WHY: Filtering needs tokens to match against hard constraints
         tokenized_snapshots = []
         for stock in live_stocks:
             tokens = self.stock_tokenizer.tokenize_stock(stock)
@@ -306,14 +310,122 @@ class RealTimeStockRanker:
             }
             tokenized_snapshots.append(tokenized_snapshot)
         
-        # STEP 3: Rank with BM25
+        # STEP 2: Apply hard constraint filtering BEFORE BM25
+        # WHY: Eliminates stocks that don't meet mandatory requirements
+        # Uses raw query string to extract filters (e.g., "tech" → sector_technology)
+        filtered_snapshots = query_filter_engine.filter_stocks(query, tokenized_snapshots)
+        
+        if not filtered_snapshots:
+            logger.warning(f"No stocks passed hard filters for query: '{query}'")
+            return []
+        
+        logger.info(f"Filtering: {len(tokenized_snapshots)} → {len(filtered_snapshots)} stocks")
+        
+        # STEP 3: Convert query to tokens for BM25 ranking
+        query_tokens = self.query_tokenizer.tokenize_query(query)
+        logger.info(f"Query tokens: {query_tokens}")
+        
+        if not query_tokens:
+            logger.warning("No valid query tokens generated")
+            return []
+        
+        # STEP 4: Rank filtered stocks with BM25
+        # WHY: BM25 ranks relevance within the already-filtered set
         results = self.bm25_ranker.rank_stocks(
             query_tokens=query_tokens,
-            stock_snapshots=tokenized_snapshots,
-            top_k=top_k
+            stock_snapshots=filtered_snapshots,
+            top_k=top_k * 3  # Get more results for soft filtering
         )
         
-        return results
+        # STEP 5: Apply soft filters based on user intent
+        # WHY: "growing stocks" should NOT return falling stocks
+        # This is a post-ranking filter that removes contradicting results
+        results = self._apply_soft_filters(query, results)
+        
+        # Return top_k after soft filtering
+        return results[:top_k]
+    
+    def _apply_soft_filters(
+        self,
+        query: str,
+        results: List[Tuple[str, float, Dict[str, Any]]]
+    ) -> List[Tuple[str, float, Dict[str, Any]]]:
+        """
+        Apply soft filters based on user intent keywords.
+        
+        WHY: 
+        - Hard filters (sector) determine WHAT category to search
+        - Soft filters determine WHICH stocks within that category match intent
+        - "tech growing stocks" means: tech sector (hard) + positive growth (soft)
+        
+        SOFT FILTER RULES:
+        - If query contains growth-positive words → exclude stocks with negative change
+        - If query contains growth-negative words → exclude stocks with positive change
+        - If no growth keywords → return all results (no soft filter)
+        
+        Args:
+            query: Original user query
+            results: BM25 ranked results
+            
+        Returns:
+            Filtered results that match user intent
+        """
+        query_lower = query.lower()
+        
+        # Define intent keywords (include base forms like 'grow' and verb forms)
+        growth_positive_keywords = [
+            'grow', 'growing', 'rise', 'rising', 'gain', 'gaining', 
+            'bullish', 'up', 'increase', 'increasing',
+            'climb', 'climbing', 'surge', 'surging', 'rally', 'rallying', 
+            'positive', 'green', 'winners', 'gainers', 'outperforming', 'hot'
+        ]
+        growth_negative_keywords = [
+            'fall', 'falling', 'decline', 'declining', 'drop', 'dropping',
+            'bearish', 'down', 'decrease', 'decreasing',
+            'sink', 'sinking', 'crash', 'crashing', 'lose', 'losing',
+            'negative', 'red', 'losers', 'underperforming', 'cold'
+        ]
+        
+        # Check for growth intent in query using word boundaries
+        import re
+        wants_positive = any(
+            re.search(r'\b' + re.escape(kw) + r'\b', query_lower)
+            for kw in growth_positive_keywords
+        )
+        wants_negative = any(
+            re.search(r'\b' + re.escape(kw) + r'\b', query_lower)
+            for kw in growth_negative_keywords
+        )
+        
+        # If no growth intent or conflicting intent, return all results
+        if not wants_positive and not wants_negative:
+            logger.debug("No growth intent detected, returning all results")
+            return results
+        
+        if wants_positive and wants_negative:
+            logger.debug("Conflicting growth intent, returning all results")
+            return results
+        
+        # Apply soft filter based on intent
+        filtered_results = []
+        for symbol, score, stock_data in results:
+            change_percent = stock_data.get('change_percent', 0) or 0
+            
+            if wants_positive and change_percent > 0:
+                # User wants growing stocks, this stock is growing
+                filtered_results.append((symbol, score, stock_data))
+            elif wants_negative and change_percent < 0:
+                # User wants falling stocks, this stock is falling
+                filtered_results.append((symbol, score, stock_data))
+        
+        if not filtered_results:
+            # If soft filter removes all results, return original
+            # (better to show some results than none)
+            logger.warning(f"Soft filter removed all results, returning unfiltered")
+            return results
+        
+        logger.info(f"Soft filter: {len(results)} → {len(filtered_results)} (intent: {'positive' if wants_positive else 'negative'})")
+        return filtered_results
 
 
 # For backward compatibility and easy import

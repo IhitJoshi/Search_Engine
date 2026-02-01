@@ -95,11 +95,9 @@ class DatabaseManager:
         with self.get_connection() as conn:
             cursor = conn.cursor()
             
-            # Drop and recreate stocks table to ensure latest schema
-            cursor.execute('DROP TABLE IF EXISTS stocks')
-            
+            # Create stocks table if it doesn't exist (don't drop existing data!)
             cursor.execute('''
-                CREATE TABLE stocks (
+                CREATE TABLE IF NOT EXISTS stocks (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     symbol TEXT NOT NULL UNIQUE,
                     company_name TEXT,
@@ -133,6 +131,11 @@ class StockFetcher:
         try:
             stock = yf.Ticker(symbol)
             info = stock.info
+            
+            # Skip if no data available
+            if not info or 'symbol' not in info:
+                logger.warning(f"No data available for {symbol}")
+                return None
             
             # Get current price from multiple possible fields
             current_price = (
@@ -217,14 +220,23 @@ class StockFetcher:
         logger.info(f"Fetching data for {len(symbols)} stocks...")
         
         success_count = 0
+        failed_symbols = []
         for symbol in symbols:
-            stock_data = self.fetch_stock_data(symbol)
-            if stock_data:
-                self.update_database(stock_data)
-                success_count += 1
+            try:
+                stock_data = self.fetch_stock_data(symbol)
+                if stock_data:
+                    self.update_database(stock_data)
+                    success_count += 1
+                else:
+                    failed_symbols.append(symbol)
+            except Exception as e:
+                logger.error(f"Failed to fetch {symbol}: {e}")
+                failed_symbols.append(symbol)
             time.sleep(1)  # Rate limiting
         
         logger.info(f"Successfully updated {success_count}/{len(symbols)} stocks")
+        if failed_symbols:
+            logger.warning(f"Failed symbols: {', '.join(failed_symbols[:10])}")
     
     def run_continuous_fetch(self, symbols: List[str], interval: int):
         """Run continuous stock data fetching"""
@@ -381,10 +393,10 @@ class StockSearchApp:
             self.db_manager.create_tables()
             logger.info("[SUCCESS] Database setup completed")
             
-            # Step 2: Fetch initial stock data
-            logger.info("Step 2: Fetching initial stock data...")
-            self.stock_fetcher.fetch_all_stocks(STOCK_SYMBOLS)
-            logger.info("[SUCCESS] Initial stock data fetched")
+            # Step 2: Fetch initial stock data (skip if DB has data)
+            logger.info("Step 2: Checking stock data...")
+            # Skip fetching to avoid API rate limits - use cached data
+            logger.info("[SKIPPED] Using cached stock data from database")
             
             # Step 3: Initialize search engine
             logger.info("Step 3: Initializing search engine...")

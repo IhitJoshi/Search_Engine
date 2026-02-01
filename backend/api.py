@@ -69,8 +69,9 @@ def initialize_stock_system():
         stock_app.initialize_system()
         logger.info("Stock system initialization completed")
         
-        # Only start the background fetcher AFTER initialization is complete
+        # Re-enable background fetcher to get all 48 stocks
         run_background_fetcher()
+        logger.info("Background fetcher started - fetching all stocks")
     except Exception as e:
         logger.error(f"Stock system initialization failed: {e}")
 
@@ -796,5 +797,6 @@ def _generate_deterministic_summary(query: str, results: list) -> str:
 
 if __name__ == '__main__':
     logger.info("Starting Flask application...")
-    app.run(debug=False, host='0.0.0.0', port=5000)
+    # Use threaded=True and use_reloader=False for stability
+    app.run(debug=False, host='0.0.0.0', port=5000, threaded=True, use_reloader=False)
 

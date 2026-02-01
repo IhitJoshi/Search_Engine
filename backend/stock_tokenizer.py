@@ -69,13 +69,13 @@ class StockTokenizer:
         change_percent = self._safe_float(stock_data.get('change_percent'))
         if change_percent is not None:
             if change_percent >= self.price_strong_up:
-                tokens.extend(['price_up', 'price_strong_up', 'rising', 'bullish'])
+                tokens.extend(['price_up', 'price_strong_up', 'rising', 'bullish', 'growth_positive'])
             elif change_percent >= self.price_up_threshold:
-                tokens.extend(['price_up', 'rising'])
+                tokens.extend(['price_up', 'rising', 'growth_positive'])
             elif change_percent <= self.price_strong_down:
-                tokens.extend(['price_down', 'price_strong_down', 'falling', 'bearish'])
+                tokens.extend(['price_down', 'price_strong_down', 'falling', 'bearish', 'growth_negative'])
             elif change_percent <= self.price_down_threshold:
-                tokens.extend(['price_down', 'falling'])
+                tokens.extend(['price_down', 'falling', 'growth_negative'])
             else:
                 tokens.append('price_stable')
         
@@ -117,11 +117,11 @@ class StockTokenizer:
             market_cap_billions = market_cap / 1_000_000_000
             
             if market_cap_billions >= self.large_cap:
-                tokens.extend(['large_cap', 'mega_cap', 'blue_chip'])
+                tokens.extend(['large_cap', 'mega_cap', 'blue_chip', 'market_cap_large'])
             elif market_cap_billions >= self.mid_cap:
-                tokens.append('mid_cap')
+                tokens.extend(['mid_cap', 'market_cap_mid'])
             else:
-                tokens.append('small_cap')
+                tokens.extend(['small_cap', 'market_cap_small'])
         
         # 5. PRICE LEVEL TOKENS
         # WHY: Users may search for "cheap stocks" or "expensive stocks"
