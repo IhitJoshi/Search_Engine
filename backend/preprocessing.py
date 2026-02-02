@@ -5,19 +5,26 @@ Enhanced text preprocessing utilities for stock data
 import pandas as pd
 import os
 import re
-import spacy
+try:
+    import spacy
+    SPACY_AVAILABLE = True
+except Exception:
+    spacy = None
+    SPACY_AVAILABLE = False
 import logging
 from typing import List, Union
 
 # Setup logging
 logger = logging.getLogger(__name__)
 
-# Load spaCy model
-try:
-    nlp = spacy.load("en_core_web_sm")
-except OSError:
-    logger.error("spaCy model 'en_core_web_sm' not found. Install with: python -m spacy download en_core_web_sm")
-    raise
+# Load spaCy model if available
+nlp = None
+if SPACY_AVAILABLE:
+    try:
+        nlp = spacy.load("en_core_web_sm")
+    except Exception:
+        logger.warning("spaCy is installed but model 'en_core_web_sm' not available. Continuing without spaCy.")
+        nlp = None
 
 # Enhanced stopwords list
 STOPWORDS = {
@@ -135,13 +142,16 @@ def lemmatize_tokens(tokens: List[str]) -> List[str]:
     if not tokens:
         return []
     
-    try:
-        doc = nlp(" ".join(tokens))
-        lemmas = [token.lemma_.lower() for token in doc if not token.is_punct and not token.is_space]
-        return lemmas
-    except Exception as e:
-        logger.error(f"Error in lemmatization: {e}")
-        return tokens  # Return original tokens if lemmatization fails
+    if SPACY_AVAILABLE and nlp is not None:
+        try:
+            doc = nlp(" ".join(tokens))
+            lemmas = [token.lemma_.lower() for token in doc if not token.is_punct and not token.is_space]
+            return lemmas
+        except Exception as e:
+            logger.error(f"Error in lemmatization: {e}")
+            return tokens
+    # Fallback: no spaCy available, return tokens as-is
+    return tokens  # Return original tokens if lemmatization not possible
 
 def preprocess_text(text: Union[str, float]) -> List[str]:
     """
@@ -151,6 +161,94 @@ def preprocess_text(text: Union[str, float]) -> List[str]:
     tokens = remove_stopwords(tokens)
     tokens = lemmatize_tokens(tokens)
     return tokens
+
+
+def normalize_sector(term: str) -> str:
+    """Normalize various sector/category synonyms to canonical sector names."""
+    if not term or not isinstance(term, str):
+        return ""
+    t = term.lower()
+    mapping = {
+        "tech": "Technology",
+        "technology": "Technology",
+        "software": "Technology",
+        "semiconductor": "Technology",
+        "finance": "Financial Services",
+        "financials": "Financial Services",
+        "bank": "Financial Services",
+        "banks": "Financial Services",
+        "health": "Healthcare",
+        "healthcare": "Healthcare",
+        "energy": "Energy",
+        "oil": "Energy",
+        "retail": "Retail",
+        "consumer": "Consumer",
+        "auto": "Automotive",
+        "automotive": "Automotive",
+        "india": "India",
+        "indian": "India",
+    }
+    for k, v in mapping.items():
+        if k in t:
+            return v
+    # fallback: title-case the input
+    return term.strip().title()
+
+
+def extract_trend_intent(query: str) -> str:
+    """Detect trend intent from user query: 'up', 'down', or '' (any)."""
+    if not query or not isinstance(query, str):
+        return ""
+    q = query.lower()
+    up_keywords = ["up", "increase", "increasing", "growing", "gain", "rising", "inc", "positive"]
+    down_keywords = ["down", "decrease", "decreasing", "fall", "falling", "drop", "loss", "decline", "dec","decr", "downward"]
+    for kw in up_keywords:
+        if kw in q:
+            return "up"
+    for kw in down_keywords:
+        if kw in q:
+            return "down"
+    return ""
+
+
+def parse_query_filters(query: str) -> dict:
+    """
+    Parse a free-text query into structured filters.
+
+    Returns a dict like:
+      {
+        'raw': <original query>,
+        'sector': <canonical sector or ''>,
+        'trend': 'up'|'down'|''
+      }
+    """
+    if not query or not isinstance(query, str):
+        return {"raw": "", "sector": "", "trend": ""}
+
+    q = query.strip()
+
+    # Try to extract a sector mention by simple token scan
+    # Look for common sector words
+    sector_candidates = [
+        "technology", "tech", "software", "semiconductor",
+        "financial", "finance", "bank", "banks", "financials",
+        "healthcare", "health", "pharma", "biotech",
+        "energy", "oil", "renewable",
+        "retail", "consumer",
+        "automotive", "auto",
+        "india", "indian"
+    ]
+
+    found_sector = ""
+    q_lower = q.lower()
+    for cand in sector_candidates:
+        if cand in q_lower:
+            found_sector = normalize_sector(cand)
+            break
+
+    trend = extract_trend_intent(q)
+
+    return {"raw": q, "sector": found_sector, "trend": trend}
 
 def tokenize_all_columns(df: pd.DataFrame, text_columns: List[str] = None) -> pd.DataFrame:
     """
