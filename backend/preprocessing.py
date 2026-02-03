@@ -175,18 +175,66 @@ def normalize_sector(term: str) -> str:
         "semiconductor": "Technology",
         "finance": "Financial Services",
         "financials": "Financial Services",
+        "financial": "Financial Services",
         "bank": "Financial Services",
         "banks": "Financial Services",
+        "investment": "Financial Services",
+        "forex": "Financial Services",
         "health": "Healthcare",
         "healthcare": "Healthcare",
+        "pharma": "Healthcare",
+        "biotech": "Healthcare",
+        "pharmaceutical": "Healthcare",
+        "hospital": "Healthcare",
         "energy": "Energy",
         "oil": "Energy",
+        "renewable": "Energy",
+        "power": "Energy",
+        "utilities": "Utilities",
+        "utility": "Utilities",
+        "gas": "Energy",
+        "fuel": "Energy",
+        "nuclear": "Energy",
         "retail": "Retail",
         "consumer": "Consumer",
+        "fmcg": "Consumer",
+        "goods": "Consumer",
+        "beverage": "Consumer",
+        "food": "Consumer",
         "auto": "Automotive",
         "automotive": "Automotive",
+        "car": "Automotive",
+        "vehicle": "Automotive",
+        "automobile": "Automotive",
+        "motor": "Automotive",
         "india": "India",
         "indian": "India",
+        "nse": "India",
+        "bse": "India",
+        "industrial": "Industrial",
+        "manufacturing": "Industrial",
+        "machinery": "Industrial",
+        "engineering": "Industrial",
+        "construction": "Industrial",
+        "telecom": "Telecom",
+        "communication": "Telecom",
+        "wireless": "Telecom",
+        "mobile": "Telecom",
+        "realty": "Realty",
+        "real": "Realty",
+        "estate": "Realty",
+        "property": "Realty",
+        "metal": "Metals",
+        "metals": "Metals",
+        "mining": "Metals",
+        "mine": "Metals",
+        "steel": "Metals",
+        "chemical": "Chemicals",
+        "chemicals": "Chemicals",
+        "infrastructure": "Infrastructure",
+        "infra": "Infrastructure",
+        "transport": "Infrastructure",
+        "logistics": "Infrastructure",
     }
     for k, v in mapping.items():
         if k in t:
@@ -228,22 +276,35 @@ def parse_query_filters(query: str) -> dict:
     q = query.strip()
 
     # Try to extract a sector mention by simple token scan
-    # Look for common sector words
-    sector_candidates = [
-        "technology", "tech", "software", "semiconductor",
-        "financial", "finance", "bank", "banks", "financials",
-        "healthcare", "health", "pharma", "biotech",
-        "energy", "oil", "renewable",
-        "retail", "consumer",
-        "automotive", "auto",
-        "india", "indian"
-    ]
+    # Look for common sector words and their related keywords
+    sector_candidates = {
+        "technology": ["technology", "tech", "software", "semiconductor", "it", "computing", "digital", "it sector", "hi-tech", "hitech"],
+        "financial": ["financial", "finance", "bank", "banks", "financials", "banking", "investment", "forex"],
+        "healthcare": ["healthcare", "health", "pharma", "biotech", "medical", "medicine", "pharmaceutical", "hospital"],
+        "energy": ["energy", "oil", "renewable", "power", "utilities", "gas", "fuel", "nuclear"],
+        "retail": ["retail", "consumer", "ecommerce", "shopping", "e-commerce", "commerce"],
+        "automotive": ["automotive", "auto", "car", "vehicle", "automobile", "motor"],
+        "india": ["india", "indian", "nse", "bse"],
+        "consumer": ["consumer", "fmcg", "goods", "beverage", "food"],
+        "industrial": ["industrial", "manufacturing", "machinery", "engineering", "construction"],
+        "telecom": ["telecom", "communication", "telecom", "wireless", "mobile"],
+        "utilities": ["utilities", "utility", "water", "electricity"],
+        "realty": ["realty", "real estate", "property", "estate", "real-estate"],
+        "metal": ["metal", "metals", "mining", "mine", "steel"],
+        "chemical": ["chemical", "chemicals", "pharma"],
+        "infrastructure": ["infrastructure", "infra", "transport", "logistics"],
+    }
 
     found_sector = ""
     q_lower = q.lower()
-    for cand in sector_candidates:
-        if cand in q_lower:
-            found_sector = normalize_sector(cand)
+    
+    # Check each sector and its related keywords
+    for sector, keywords in sector_candidates.items():
+        for keyword in keywords:
+            if keyword in q_lower:
+                found_sector = normalize_sector(sector)
+                break
+        if found_sector:
             break
 
     trend = extract_trend_intent(q)

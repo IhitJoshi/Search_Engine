@@ -5,7 +5,6 @@ const menuItems = [
   { key: "overview", label: "Overview" },
   { key: "account", label: "Account" },
   { key: "security", label: "Security" },
-  { key: "notifications", label: "Notifications" },
 ];
 
 const Profile = ({ username = "User", onLogout }) => {
@@ -318,10 +317,6 @@ const Profile = ({ username = "User", onLogout }) => {
               {active === "security" && (
                 <SecurityPanel auth={auth} username={username} onLogout={onLogout} />
               )}
-
-              {active === "notifications" && (
-                <NotificationsPanel />
-              )}
             </div>
           </main>
         </div>
@@ -332,12 +327,58 @@ const Profile = ({ username = "User", onLogout }) => {
 
 // Account Panel Component
 function AccountPanel({ auth, username, onLogout }) {
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
+  const [newEmail, setNewEmail] = useState(auth.email || "");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleEmailUpdate = async () => {
+    if (!newEmail) {
+      setMessage("Email cannot be empty");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("http://localhost:5000/api/auth/update-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email: newEmail }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setMessage("Email updated successfully");
+        auth.email = newEmail;
+        setIsEditingEmail(false);
+        setTimeout(() => setMessage(""), 3000);
+      } else {
+        setMessage(data.error || "Failed to update email");
+      }
+    } catch (e) {
+      setMessage("Error updating email");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Account Settings</h2>
-        <p className="text-gray-600">Manage your account information and preferences</p>
+        <p className="text-gray-600">Manage your account information</p>
       </div>
+
+      {message && (
+        <div className={`p-4 rounded-lg text-sm font-medium ${
+          message.includes("successfully")
+            ? "bg-green-50 text-green-700 border border-green-200"
+            : "bg-red-50 text-red-700 border border-red-200"
+        }`}>
+          {message}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Profile Information */}
@@ -354,11 +395,49 @@ function AccountPanel({ auth, username, onLogout }) {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-              <input 
-                disabled 
-                value={auth.email || ""} 
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-600"
-              />
+              {isEditingEmail ? (
+                <div className="space-y-2">
+                  <input 
+                    type="email"
+                    value={newEmail} 
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    className="w-full px-4 py-3 border border-blue-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    placeholder="Enter new email"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleEmailUpdate}
+                      disabled={loading}
+                      className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors"
+                    >
+                      {loading ? "Saving..." : "Save"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsEditingEmail(false);
+                        setNewEmail(auth.email || "");
+                      }}
+                      className="flex-1 px-3 py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <input 
+                    disabled 
+                    value={auth.email || ""} 
+                    className="flex-1 px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-600"
+                  />
+                  <button
+                    onClick={() => setIsEditingEmail(true)}
+                    className="ml-2 px-4 py-3 border border-blue-200 text-blue-600 hover:bg-blue-50 rounded-lg font-medium transition-colors whitespace-nowrap"
+                  >
+                    Edit
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -366,27 +445,24 @@ function AccountPanel({ auth, username, onLogout }) {
         {/* Account Type */}
         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Type</h3>
-          <div className="flex items-center space-x-4 mb-4">
+          <div className="flex items-center space-x-4">
             <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
             <div>
-              <p className="font-semibold text-gray-900">Premium Trader</p>
+              <p className="font-semibold text-gray-900">Standard User</p>
               <p className="text-sm text-gray-600">Full market access</p>
             </div>
           </div>
-          <button className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium">
-            Upgrade Plan
-          </button>
         </div>
       </div>
 
-      {/* Danger Zone */}
+      {/* Sign Out */}
       <div className="bg-gradient-to-br from-red-50 to-white rounded-2xl border border-red-200 p-6">
-        <h3 className="text-lg font-semibold text-red-700 mb-4">Danger Zone</h3>
-        <p className="text-red-600 mb-4">Once you sign out, you'll need to sign in again to access your account.</p>
+        <h3 className="text-lg font-semibold text-red-700 mb-4">Sign Out</h3>
+        <p className="text-red-600 mb-4">Sign out from your account.</p>
         <button 
           onClick={onLogout}
           className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors flex items-center space-x-2"
@@ -403,21 +479,139 @@ function AccountPanel({ auth, username, onLogout }) {
 
 // Security Panel Component
 function SecurityPanel({ auth, username, onLogout }) {
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [passwords, setPasswords] = useState({ current: "", new: "", confirm: "" });
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handlePasswordChange = async () => {
+    if (!passwords.current || !passwords.new || !passwords.confirm) {
+      setMessage("All fields are required");
+      return;
+    }
+
+    if (passwords.new !== passwords.confirm) {
+      setMessage("New passwords do not match");
+      return;
+    }
+
+    if (passwords.new.length < 6) {
+      setMessage("Password must be at least 6 characters");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("http://localhost:5000/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          current_password: passwords.current,
+          new_password: passwords.new,
+        }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setMessage("Password changed successfully");
+        setPasswords({ current: "", new: "", confirm: "" });
+        setShowPasswordForm(false);
+        setTimeout(() => setMessage(""), 3000);
+      } else {
+        setMessage(data.error || "Failed to change password");
+      }
+    } catch (e) {
+      setMessage("Error changing password");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Security Settings</h2>
-        <p className="text-gray-600">Manage your account security and session settings</p>
+        <p className="text-gray-600">Manage your account security</p>
       </div>
+
+      {message && (
+        <div className={`p-4 rounded-lg text-sm font-medium ${
+          message.includes("successfully")
+            ? "bg-green-50 text-green-700 border border-green-200"
+            : "bg-red-50 text-red-700 border border-red-200"
+        }`}>
+          {message}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Password Security */}
         <div className="bg-gradient-to-br from-gray-50 to-white rounded-2xl border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Password</h3>
-          <p className="text-sm text-gray-600 mb-4">Password changes are managed via the authentication service.</p>
-          <button disabled className="w-full px-4 py-3 bg-gray-100 text-gray-400 rounded-lg font-medium cursor-not-allowed">
-            Change Password
-          </button>
+          
+          {!showPasswordForm ? (
+            <>
+              <p className="text-sm text-gray-600 mb-4">Keep your account secure with a strong password.</p>
+              <button 
+                onClick={() => setShowPasswordForm(true)}
+                className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+              >
+                Change Password
+              </button>
+            </>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+                <input 
+                  type="password"
+                  value={passwords.current}
+                  onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  placeholder="Enter current password"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                <input 
+                  type="password"
+                  value={passwords.new}
+                  onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  placeholder="Enter new password"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
+                <input 
+                  type="password"
+                  value={passwords.confirm}
+                  onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  placeholder="Confirm new password"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handlePasswordChange}
+                  disabled={loading}
+                  className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors"
+                >
+                  {loading ? "Updating..." : "Update Password"}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowPasswordForm(false);
+                    setPasswords({ current: "", new: "", confirm: "" });
+                  }}
+                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Session Management */}
@@ -428,7 +622,7 @@ function SecurityPanel({ auth, username, onLogout }) {
             onClick={onLogout}
             className="w-full px-4 py-3 border border-red-200 text-red-600 hover:bg-red-50 rounded-lg font-medium transition-colors"
           >
-            Sign Out All Sessions
+            Sign Out
           </button>
         </div>
       </div>
@@ -443,81 +637,10 @@ function SecurityPanel({ auth, username, onLogout }) {
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900">Account Secure</h3>
-            <p className="text-sm text-gray-600">Your account is protected and up to date</p>
+            <p className="text-sm text-gray-600">Your account is protected</p>
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-// Notifications Panel Component
-function NotificationsPanel() {
-  const [emailAlerts, setEmailAlerts] = useState(true);
-  const [priceAlerts, setPriceAlerts] = useState(false);
-  const [newsletter, setNewsletter] = useState(false);
-
-  return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Notification Preferences</h2>
-        <p className="text-gray-600">Choose what updates you want to receive</p>
-      </div>
-
-      <div className="bg-gradient-to-br from-gray-50 to-white rounded-2xl border border-gray-200 p-6">
-        <div className="space-y-6">
-          <ToggleRow 
-            label="Email Alerts" 
-            checked={emailAlerts} 
-            onChange={setEmailAlerts} 
-            description="Important account and system notifications"
-          />
-          <ToggleRow 
-            label="Price Change Alerts" 
-            checked={priceAlerts} 
-            onChange={setPriceAlerts} 
-            description="Get notified on significant price movements"
-          />
-          <ToggleRow 
-            label="Weekly Newsletter" 
-            checked={newsletter} 
-            onChange={setNewsletter} 
-            description="A weekly summary of market highlights"
-          />
-        </div>
-
-        <div className="mt-8 pt-6 border-t border-gray-200">
-          <button className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors">
-            Save Preferences
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Toggle Row Component
-function ToggleRow({ label, description, checked, onChange }) {
-  return (
-    <div className="flex items-center justify-between p-4 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors">
-      <div className="flex-1">
-        <p className="font-semibold text-gray-900">{label}</p>
-        {description && <p className="text-sm text-gray-600 mt-1">{description}</p>}
-      </div>
-      <button
-        onClick={() => onChange(!checked)}
-        className={`w-14 h-8 rounded-full relative transition-colors duration-300 ${
-          checked ? "bg-blue-600" : "bg-gray-300"
-        }`}
-        role="switch"
-        aria-checked={checked}
-      >
-        <span
-          className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-lg transition-transform duration-300 ${
-            checked ? "translate-x-7" : "translate-x-1"
-          }`}
-        />
-      </button>
     </div>
   );
 }

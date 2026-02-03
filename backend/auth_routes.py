@@ -128,3 +128,122 @@ def forgot_password():
     except Exception:
         logger.exception("Forgot password error")
         raise APIError("Failed to process password reset request")
+
+
+@app.route("/api/auth/check", methods=["GET"])
+@require_auth()
+def check_auth():
+    """Check if user is authenticated and return user info"""
+    try:
+        from flask import session
+        username = session.get('username')
+        email = session.get('email')
+
+        return jsonify({
+            'logged_in': True,
+            'username': username,
+            'email': email
+        })
+
+    except APIError:
+        raise
+    except Exception as e:
+        logger.exception("Auth check error")
+        raise APIError("Failed to check authentication")
+
+
+@app.route("/api/auth/update-email", methods=["POST"])
+@require_auth()
+def update_email():
+    """Update user's email address"""
+    try:
+        from flask import session
+        data = request.get_json()
+        if not data:
+            raise APIError("No JSON data provided")
+
+        new_email = data.get("email", "").strip()
+
+        if not new_email:
+            raise APIError("Email is required")
+
+        username = session.get('username')
+
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            try:
+                cursor.execute(
+                    "UPDATE users SET email = ? WHERE username = ?",
+                    (new_email, username)
+                )
+                conn.commit()
+            except sqlite3.IntegrityError:
+                raise APIError("Email already exists")
+
+        session['email'] = new_email
+        logger.info(f"Email updated for user: {username}")
+        return jsonify({
+            'message': 'Email updated successfully',
+            'email': new_email
+        })
+
+    except APIError:
+        raise
+    except Exception as e:
+        logger.exception("Update email error")
+        raise APIError("Failed to update email")
+
+
+@app.route("/api/auth/change-password", methods=["POST"])
+@require_auth()
+def change_password():
+    """Change user's password"""
+    try:
+        from flask import session
+        data = request.get_json()
+        if not data:
+            raise APIError("No JSON data provided")
+
+        current_password = data.get("current_password", "")
+        new_password = data.get("new_password", "")
+
+        if not current_password or not new_password:
+            raise APIError("Current password and new password are required")
+
+        if len(new_password) < 6:
+            raise APIError("New password must be at least 6 characters long")
+
+        username = session.get('username')
+
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT password_hash FROM users WHERE username = ?",
+                (username,)
+            )
+            user = cursor.fetchone()
+
+            if not user:
+                raise APIError("User not found", 404)
+
+            # Verify current password
+            if user['password_hash'] != hash_password(current_password):
+                raise APIError("Current password is incorrect", 401)
+
+            # Update password
+            cursor.execute(
+                "UPDATE users SET password_hash = ? WHERE username = ?",
+                (hash_password(new_password), username)
+            )
+            conn.commit()
+
+        logger.info(f"Password changed for user: {username}")
+        return jsonify({
+            'message': 'Password changed successfully'
+        })
+
+    except APIError:
+        raise
+    except Exception as e:
+        logger.exception("Change password error")
+        raise APIError("Failed to change password")

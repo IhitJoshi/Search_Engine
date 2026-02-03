@@ -5,6 +5,34 @@ from preprocessing import parse_query_filters
 from response_synthesizer import response_synthesizer
 
 
+def check_all_stocks_query(query: str) -> bool:
+    """
+    Check if the query is an 'all stocks' query.
+    Matches patterns like:
+    - "all stocks"
+    - "all stocks tech"
+    - "all stocks technology"
+    - "all tech stocks"
+    - "show all stocks"
+    - etc.
+    """
+    if not query:
+        return False
+    
+    q = query.lower().strip()
+    
+    # Related keywords for "all"
+    all_keywords = ['all', 'show all', 'list all', 'get all', 'fetch all', 'display all']
+    # Related keywords for "stocks"
+    stock_keywords = ['stocks', 'stock', 'companies', 'company', 'shares']
+    
+    # Check if query contains "all" and "stocks" keywords
+    has_all = any(keyword in q for keyword in all_keywords)
+    has_stocks = any(keyword in q for keyword in stock_keywords)
+    
+    return has_all and has_stocks
+
+
 @app.route('/api/search', methods=['POST'])
 @require_auth()
 def search():
@@ -21,6 +49,9 @@ def search():
             raise APIError("Query too long")
 
         logger.info(f"Received search query: '{query}', sector: '{sector_filter}', limit: {limit}")
+
+        # Check if this is an "all stocks" query
+        is_all_stocks_query = check_all_stocks_query(query)
 
         # Fetch live stock data
         with stock_app.db_manager.get_connection() as conn:
@@ -96,7 +127,17 @@ def search():
                 live_stocks = [s for s in live_stocks if (get_change_value(s) or 0) < 0]
 
         # Ranking
-        if query:
+        if is_all_stocks_query:
+            # For "all stocks" queries, return all stocks without ranking
+            formatted_for_synthesizer = []
+            for stock_data in live_stocks[:limit]:
+                result_dict = {**stock_data}
+                result_dict['_score'] = 1.0
+                result_dict['tokens'] = []
+                formatted_for_synthesizer.append(result_dict)
+            response = response_synthesizer.synthesize_response(query=query or 'all stocks', ranked_results=formatted_for_synthesizer, ranking_method='default', metadata={'sector_filter': effective_sector, 'all_stocks': True} if effective_sector else {'all_stocks': True})
+            return jsonify(response)
+        elif query:
             ranked_results = stock_ranker.rank_live_stocks(query=query, live_stocks=live_stocks, top_k=limit)
             formatted_for_synthesizer = []
             for symbol, score, stock_data in ranked_results:
