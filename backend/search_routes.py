@@ -5,34 +5,6 @@ from preprocessing import parse_query_filters
 from response_synthesizer import response_synthesizer
 
 
-def check_all_stocks_query(query: str) -> bool:
-    """
-    Check if the query is an 'all stocks' query.
-    Matches patterns like:
-    - "all stocks"
-    - "all stocks tech"
-    - "all stocks technology"
-    - "all tech stocks"
-    - "show all stocks"
-    - etc.
-    """
-    if not query:
-        return False
-    
-    q = query.lower().strip()
-    
-    # Related keywords for "all"
-    all_keywords = ['all', 'show all', 'list all', 'get all', 'fetch all', 'display all']
-    # Related keywords for "stocks"
-    stock_keywords = ['stocks', 'stock', 'companies', 'company', 'shares']
-    
-    # Check if query contains "all" and "stocks" keywords
-    has_all = any(keyword in q for keyword in all_keywords)
-    has_stocks = any(keyword in q for keyword in stock_keywords)
-    
-    return has_all and has_stocks
-
-
 @app.route('/api/search', methods=['POST'])
 @require_auth()
 def search():
@@ -49,9 +21,6 @@ def search():
             raise APIError("Query too long")
 
         logger.info(f"Received search query: '{query}', sector: '{sector_filter}', limit: {limit}")
-
-        # Check if this is an "all stocks" query
-        is_all_stocks_query = check_all_stocks_query(query)
 
         # Fetch live stock data
         with stock_app.db_manager.get_connection() as conn:
@@ -86,7 +55,15 @@ def search():
         parsed_filters = parse_query_filters(query or "")
         implicit_sector = parsed_filters.get('sector', '')
         implicit_trend = parsed_filters.get('trend', '')
+        is_all_stocks_query = parsed_filters.get('all_stocks', False)
         effective_sector = sector_filter or implicit_sector
+
+        # If the user asked for "all stocks" WITHOUT specifying a sector,
+        # ignore any sector filters so that a plain "all stocks" query
+        # truly returns all stocks regardless of category. Preserve sector
+        # filtering when the query explicitly includes a sector (e.g., "all stocks tech").
+        if is_all_stocks_query and not (sector_filter or implicit_sector):
+            effective_sector = ''
 
         # Apply sector filter if needed
         if effective_sector:
@@ -171,6 +148,7 @@ def ai_search():
         if not data:
             return jsonify({"error": "No JSON data provided"}), 400
         query = data.get("query", "").strip()
+        limit = data.get("limit", 50)
         if not query:
             return jsonify({"error": "Empty query"}), 400
         if len(query) > 500:
@@ -197,6 +175,9 @@ def ai_search():
         parsed_filters = parse_query_filters(query)
         effective_sector = parsed_filters.get('sector', '')
         trend_to_apply = parsed_filters.get('trend', '')
+        is_all_stocks_query = parsed_filters.get('all_stocks', False)
+        if is_all_stocks_query and not effective_sector:
+            effective_sector = ''
         if effective_sector:
             eff = effective_sector.lower()
             def sector_match(row):
@@ -229,6 +210,23 @@ def ai_search():
                 live_stocks = [s for s in live_stocks if (get_change_value(s) or 0) > 0]
             elif trend_to_apply == 'down':
                 live_stocks = [s for s in live_stocks if (get_change_value(s) or 0) < 0]
+
+        if is_all_stocks_query:
+            results = []
+            for idx, item in enumerate(live_stocks[:limit], start=1):
+                results.append({
+                    "symbol": item.get('symbol'),
+                    "name": item.get('company_name', item.get('symbol')),
+                    "price": item.get('price'),
+                    "volume": item.get('volume'),
+                    "change_percent": item.get('change_percent'),
+                    "changed": "up" if (item.get('change_percent') or 0) > 0 else "down",
+                    "rank": idx,
+                    "score": 1.0,
+                    "reasons": []
+                })
+            summary = f"Found {len(results)} stocks for '{query}'."
+            return jsonify({"query": query, "summary": summary, "results": results, "timestamp": __import__('datetime').datetime.now().isoformat() + 'Z'})
 
         ranked_results = stock_ranker.rank_live_stocks(query=query, live_stocks=live_stocks, top_k=12)
         if not ranked_results:

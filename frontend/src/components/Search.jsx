@@ -64,6 +64,32 @@ const Search = ({ username, onLogout, initialQuery = "", sectorFilter = "", stoc
     setMessage({ text: "", type: "" });
 
     try {
+      // If the user typed a plain "all"/"every"/"everything" query (and
+      // did not name a sector), show live cached stocks. This handles a
+      // variety of user phrasings like "all", "all stocks", "everything",
+      // "show all", "list all" etc.
+      const lowerQuery = query.toLowerCase();
+      const allKeywords = ['all', 'every', 'everything', 'anything', 'show all', 'list all', 'display all', 'all the'];
+      // Sector name hints to avoid treating 'all tech stocks' as a plain 'all'
+      const sectorHints = ['tech', 'technology', 'software', 'finance', 'financial', 'bank', 'energy', 'health', 'healthcare', 'pharma', 'automotive', 'auto', 'retail', 'industrial', 'india', 'consumer', 'telecom', 'utilities', 'realty', 'metal', 'chemical', 'infrastructure'];
+
+      const containsAllKeyword = allKeywords.some(k => lowerQuery.includes(k));
+      const containsSectorHint = sectorHints.some(s => lowerQuery.includes(s));
+
+      if (containsAllKeyword && !containsSectorHint && !sectorFilter) {
+        if (allStocks.length > 0) {
+          const limited = allStocks.slice(0, stockLimit || 50);
+          setDisplayedStocks(limited);
+          setStats({ total: limited.length, time: 0, query: "all stocks" });
+          setMessage({ text: "Showing live results", type: "success" });
+        } else {
+          setDisplayedStocks([]);
+          setMessage({ text: "No results found.", type: "info" });
+        }
+        setIsLoading(false);
+        return;
+      }
+
       // If this is a sector navigation (no query, has sector), prefer live data and skip backend search
       if (!query && sectorFilter) {
         // If we already have live data, show it immediately

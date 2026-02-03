@@ -267,13 +267,24 @@ def parse_query_filters(query: str) -> dict:
       {
         'raw': <original query>,
         'sector': <canonical sector or ''>,
-        'trend': 'up'|'down'|''
+        'trend': 'up'|'down'|'',
+        'all_stocks': bool
       }
     """
     if not query or not isinstance(query, str):
-        return {"raw": "", "sector": "", "trend": ""}
+        return {"raw": "", "sector": "", "trend": "", "all_stocks": False}
 
     q = query.strip()
+    q_lower = q.lower()
+
+    # Detect "all stocks" intent (e.g., "all stocks", "show all stocks", "all")
+    all_keywords = ['all', 'show all', 'list all', 'get all', 'fetch all', 'display all', 'every', 'everything', 'anything', 'all the']
+    stock_keywords = ['stocks', 'stock', 'companies', 'company', 'shares']
+    has_all = any(keyword in q_lower for keyword in all_keywords)
+    has_stocks = any(keyword in q_lower for keyword in stock_keywords)
+    short_all_words = {'all', 'every', 'everything', 'anything'}
+    is_short_all = q_lower in short_all_words or q_lower.startswith('all ') or q_lower.startswith('show all')
+    all_stocks = has_all and (has_stocks or is_short_all)
 
     # Try to extract a sector mention by simple token scan
     # Look for common sector words and their related keywords
@@ -296,7 +307,6 @@ def parse_query_filters(query: str) -> dict:
     }
 
     found_sector = ""
-    q_lower = q.lower()
     
     # Check each sector and its related keywords
     for sector, keywords in sector_candidates.items():
@@ -309,7 +319,7 @@ def parse_query_filters(query: str) -> dict:
 
     trend = extract_trend_intent(q)
 
-    return {"raw": q, "sector": found_sector, "trend": trend}
+    return {"raw": q, "sector": found_sector, "trend": trend, "all_stocks": all_stocks}
 
 def tokenize_all_columns(df: pd.DataFrame, text_columns: List[str] = None) -> pd.DataFrame:
     """
