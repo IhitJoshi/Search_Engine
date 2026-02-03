@@ -57,6 +57,7 @@ def search():
         implicit_trend = parsed_filters.get('trend', '')
         is_all_stocks_query = parsed_filters.get('all_stocks', False)
         effective_sector = sector_filter or implicit_sector
+        is_trend_only_query = bool(implicit_trend) and not (sector_filter or implicit_sector)
 
         # If the user asked for "all stocks" WITHOUT specifying a sector,
         # ignore any sector filters so that a plain "all stocks" query
@@ -104,7 +105,7 @@ def search():
                 live_stocks = [s for s in live_stocks if (get_change_value(s) or 0) < 0]
 
         # Ranking
-        if is_all_stocks_query:
+        if is_all_stocks_query or is_trend_only_query:
             # For "all stocks" queries, return all stocks without ranking
             formatted_for_synthesizer = []
             for stock_data in live_stocks[:limit]:
@@ -176,7 +177,8 @@ def ai_search():
         effective_sector = parsed_filters.get('sector', '')
         trend_to_apply = parsed_filters.get('trend', '')
         is_all_stocks_query = parsed_filters.get('all_stocks', False)
-        if is_all_stocks_query and not effective_sector:
+        is_trend_only_query = bool(trend_to_apply) and not effective_sector
+        if (is_all_stocks_query or is_trend_only_query) and not effective_sector:
             effective_sector = ''
         if effective_sector:
             eff = effective_sector.lower()
@@ -211,7 +213,7 @@ def ai_search():
             elif trend_to_apply == 'down':
                 live_stocks = [s for s in live_stocks if (get_change_value(s) or 0) < 0]
 
-        if is_all_stocks_query:
+        if is_all_stocks_query or is_trend_only_query:
             results = []
             for idx, item in enumerate(live_stocks[:limit], start=1):
                 results.append({
