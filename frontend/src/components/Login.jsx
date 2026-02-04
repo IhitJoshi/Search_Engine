@@ -135,31 +135,64 @@ const Login = ({ onLoginSuccess, onNavigateToSignup }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center px-4 py-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-black flex items-center justify-center px-4 py-8 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Grid pattern */}
+        <div className="absolute inset-0 opacity-5" style={{
+          backgroundImage: `linear-gradient(to right, #1e293b 1px, transparent 1px),
+                          linear-gradient(to bottom, #1e293b 1px, transparent 1px)`,
+          backgroundSize: '50px 50px'
+        }}></div>
+        
+        {/* Animated trading chart lines */}
+        <div className="absolute top-1/3 left-0 w-full h-48">
+          <svg width="100%" height="100%" className="opacity-10">
+            <path d="M0,80 Q150,40 300,100 T600,60 T900,120 L1200,80" 
+                  stroke="#3b82f6" strokeWidth="2" fill="none" className="animate-pulse"/>
+            <path d="M0,140 Q150,100 300,160 T600,120 T900,180 L1200,140" 
+                  stroke="#10b981" strokeWidth="2" fill="none" className="animate-pulse delay-300"/>
+          </svg>
+        </div>
+
+        {/* Glowing orbs */}
+        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      </div>
+
+      <div className="max-w-md w-full space-y-8 relative z-10">
         {/* Header Section */}
         <div className="text-center">
           <div className="flex items-center justify-center space-x-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">S</span>
+            <div className="relative w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/30">
+              <span className="text-white font-bold text-xl">S</span>
+              <div className="absolute inset-0 rounded-xl border border-cyan-400/30"></div>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">StockSearch</h1>
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                StockSearch
+              </h1>
+              <p className="text-gray-400 text-lg mt-1">Professional Trading Terminal</p>
+            </div>
           </div>
-          <p className="text-gray-600 text-lg">Your professional trading companion</p>
+          <div className="inline-flex items-center space-x-2 px-4 py-2 bg-gray-800/50 backdrop-blur-sm rounded-full border border-cyan-500/20 mb-2">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+            <span className="text-sm font-medium text-cyan-400">SECURE TRADING ACCESS</span>
+          </div>
         </div>
 
         {/* Login Card */}
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="p-8">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-gray-900">Welcome Back</h2>
-              <p className="text-gray-500 mt-2">Access your stock portfolio and market insights</p>
+        <div className="bg-gray-800/40 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-700/50 overflow-hidden transform transition-all duration-500 hover:shadow-cyan-500/10">
+          <div className="p-10">
+            <div className="text-center mb-10">
+              <h2 className="text-3xl font-bold text-gray-100 mb-3">Welcome Back</h2>
+              <p className="text-gray-400 text-lg">Access your portfolio and market insights</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-8">
               {/* Username Field */}
-              <div>
-                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="group">
+                <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-3 ml-1">
                   Username
                 </label>
                 <div className="relative">
@@ -167,24 +200,24 @@ const Login = ({ onLoginSuccess, onNavigateToSignup }) => {
                     id="username"
                     type="text" 
                     name="username"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
+                    className="w-full px-5 py-4 bg-gray-900/50 border border-gray-700 rounded-xl focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 outline-none transition-all duration-300 text-gray-100 placeholder-gray-500 hover:bg-gray-900/70 hover:border-gray-600"
                     placeholder="Enter your username"
                     value={formData.username}
                     onChange={handleInputChange}
                     required
                     disabled={isLoading}
                   />
-                  <div className="absolute right-3 top-3 text-gray-400">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  <div className="absolute right-4 top-4 text-gray-500 group-hover:text-cyan-400 transition-colors">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   </div>
                 </div>
               </div>
               
               {/* Password Field */}
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="group">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-3 ml-1">
                   Password
                 </label>
                 <div className="relative">
@@ -192,16 +225,16 @@ const Login = ({ onLoginSuccess, onNavigateToSignup }) => {
                     id="password"
                     type="password" 
                     name="password"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
+                    className="w-full px-5 py-4 bg-gray-900/50 border border-gray-700 rounded-xl focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 outline-none transition-all duration-300 text-gray-100 placeholder-gray-500 hover:bg-gray-900/70 hover:border-gray-600"
                     placeholder="Enter your password"
                     value={formData.password}
                     onChange={handleInputChange}
                     required
                     disabled={isLoading}
                   />
-                  <div className="absolute right-3 top-3 text-gray-400">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  <div className="absolute right-4 top-4 text-gray-500 group-hover:text-cyan-400 transition-colors">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                   </div>
                 </div>
@@ -209,20 +242,22 @@ const Login = ({ onLoginSuccess, onNavigateToSignup }) => {
 
               {/* Options Row */}
               <div className="flex items-center justify-between">
-                <label className="flex items-center space-x-3 text-gray-700 cursor-pointer group">
-                  <div className={`relative w-5 h-5 border-2 rounded ${rememberMe ? 'bg-blue-500 border-blue-500' : 'border-gray-300'} group-hover:border-blue-400 transition-colors`}>
+                <label className="flex items-center space-x-3 text-gray-300 cursor-pointer group">
+                  <div className={`relative w-5 h-5 border-2 rounded-md transition-all duration-200 ${
+                    rememberMe ? 'bg-cyan-500 border-cyan-500' : 'border-gray-600 group-hover:border-cyan-500'
+                  }`}>
                     {rememberMe && (
-                      <svg className="absolute top-0.5 left-0.5 w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="absolute top-0.5 left-0.5 w-3 h-3 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
                     )}
                   </div>
-                  <span className="text-sm font-medium">Remember me</span>
+                  <span className="text-sm font-medium group-hover:text-cyan-300 transition-colors">Remember me</span>
                 </label>
                 <button 
                   type="button" 
                   onClick={() => setShowForgotPassword(true)}
-                  className="text-sm font-medium text-blue-600 hover:text-blue-500 transition-colors"
+                  className="text-sm font-medium text-cyan-400 hover:text-cyan-300 transition-all duration-300 hover:underline underline-offset-2"
                 >
                   Forgot password?
                 </button>
@@ -232,98 +267,128 @@ const Login = ({ onLoginSuccess, onNavigateToSignup }) => {
               <button 
                 type="submit" 
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3.5 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 text-white py-4 rounded-xl font-semibold hover:from-cyan-700 hover:to-blue-700 transition-all duration-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:-translate-y-1 active:translate-y-0 group"
               >
-                {isLoading ? (
-                  <div className="flex items-center justify-center space-x-2">
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span>Signing In...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center space-x-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                    </svg>
-                    <span>Sign In to Dashboard</span>
-                  </div>
-                )}
+                <div className="flex items-center justify-center space-x-3">
+                  {isLoading ? (
+                    <>
+                      <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <span className="text-lg">Accessing Terminal...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-6 h-6 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                      </svg>
+                      <span className="text-lg">Access Trading Dashboard</span>
+                    </>
+                  )}
+                </div>
               </button>
 
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-700/50"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-gray-800/40 text-gray-400">New to trading platform?</span>
+                </div>
+              </div>
+
               {/* Signup Link */}
-              <div className="text-center pt-4 border-t border-gray-100">
-                <p className="text-gray-600">
-                  New to StockSearch?{' '}
-                  <button 
-                    type="button"
-                    onClick={onNavigateToSignup}
-                    className="font-semibold text-blue-600 hover:text-blue-500 transition-colors inline-flex items-center space-x-1"
-                  >
-                    <span>Create account</span>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </p>
+              <div className="text-center">
+                <button 
+                  type="button"
+                  onClick={onNavigateToSignup}
+                  className="inline-flex items-center space-x-2 px-6 py-3.5 border-2 border-gray-700 rounded-xl font-semibold text-gray-300 hover:border-cyan-500 hover:text-cyan-300 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/10"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                  <span>Create Trading Account</span>
+                </button>
               </div>
             </form>
 
             {/* Message Alert */}
             {message.text && (
-              <div className={`mt-6 p-4 rounded-lg border ${
+              <div className={`mt-8 p-5 rounded-xl border backdrop-blur-sm animate-fade-in ${
                 message.type === 'success' 
-                  ? 'bg-green-50 border-green-200 text-green-700' 
-                  : 'bg-red-50 border-red-200 text-red-700'
+                  ? 'bg-gradient-to-r from-emerald-900/20 to-green-900/20 border-emerald-700/30 text-emerald-300' 
+                  : 'bg-gradient-to-r from-red-900/20 to-rose-900/20 border-red-700/30 text-red-300'
               }`}>
-                <div className="flex items-center space-x-2">
-                  <svg className={`w-5 h-5 ${message.type === 'success' ? 'text-green-500' : 'text-red-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    {message.type === 'success' ? (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    ) : (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    )}
-                  </svg>
-                  <span className="font-medium">{message.text}</span>
+                <div className="flex items-center space-x-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    message.type === 'success' ? 'bg-emerald-900/30' : 'bg-red-900/30'
+                  }`}>
+                    <svg className={`w-5 h-5 ${message.type === 'success' ? 'text-emerald-400' : 'text-red-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      {message.type === 'success' ? (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      ) : (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.998-.833-2.732 0L4.342 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                      )}
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-semibold">{message.type === 'success' ? 'Access Granted!' : 'Authentication Error'}</p>
+                    <p className="text-sm mt-1">{message.text}</p>
+                  </div>
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* Footer Note */}
-        <div className="text-center text-gray-500 text-sm">
-          <p>Secure access to real-time market data and analytics</p>
+        {/* Features */}
+        <div className="grid grid-cols-2 gap-4 pt-6">
+          <div className="text-center p-4 bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700/30 hover:border-cyan-500/30 transition-colors">
+            <div className="w-8 h-8 bg-gradient-to-r from-cyan-900/30 to-blue-900/30 rounded-lg flex items-center justify-center mx-auto mb-2">
+              <svg className="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-gray-300">Real-time Data</p>
+          </div>
+          <div className="text-center p-4 bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700/30 hover:border-emerald-500/30 transition-colors">
+            <div className="w-8 h-8 bg-gradient-to-r from-emerald-900/30 to-green-900/30 rounded-lg flex items-center justify-center mx-auto mb-2">
+              <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-gray-300">Secure Access</p>
+          </div>
         </div>
       </div>
 
       {/* Forgot Password Modal */}
       {showForgotPassword && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center px-4 z-50" onClick={closeForgotPasswordModal}>
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-8" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-900">Reset Password</h3>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center px-4 z-50 animate-fade-in" onClick={closeForgotPasswordModal}>
+          <div className="bg-gray-800/95 backdrop-blur-xl rounded-2xl shadow-2xl max-w-md w-full p-10 transform transition-all duration-300 scale-100" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-100">Reset Password</h3>
+                <p className="text-gray-400 mt-2">Get back to your trading terminal</p>
+              </div>
               <button 
                 onClick={closeForgotPasswordModal}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="w-10 h-10 rounded-full hover:bg-gray-700/50 flex items-center justify-center transition-colors"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-gray-400 hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            <p className="text-gray-600 mb-6">
-              Enter your email address and we'll send you instructions to reset your password.
-            </p>
-
-            <form onSubmit={handleForgotPassword} className="space-y-4">
-              <div>
-                <label htmlFor="resetEmail" className="block text-sm font-medium text-gray-700 mb-2">
+            <form onSubmit={handleForgotPassword} className="space-y-6">
+              <div className="group">
+                <label htmlFor="resetEmail" className="block text-sm font-medium text-gray-300 mb-3 ml-1">
                   Email Address
                 </label>
                 <input 
                   id="resetEmail"
                   type="email" 
-                  className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
+                  className="w-full px-5 py-4 bg-gray-900/50 border border-gray-700 rounded-xl focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 outline-none transition-all duration-300 text-gray-100 placeholder-gray-500 hover:bg-gray-900/70"
                   placeholder="Enter your email"
                   value={resetEmail}
                   onChange={(e) => setResetEmail(e.target.value)}
@@ -333,41 +398,47 @@ const Login = ({ onLoginSuccess, onNavigateToSignup }) => {
               </div>
 
               {resetMessage.text && (
-                <div className={`p-3 rounded-lg border ${
+                <div className={`p-4 rounded-xl border backdrop-blur-sm animate-fade-in ${
                   resetMessage.type === 'success' 
-                    ? 'bg-green-50 border-green-200 text-green-700' 
-                    : 'bg-red-50 border-red-200 text-red-700'
+                    ? 'bg-gradient-to-r from-emerald-900/20 to-green-900/20 border-emerald-700/30' 
+                    : 'bg-gradient-to-r from-red-900/20 to-rose-900/20 border-red-700/30'
                 }`}>
-                  <div className="flex items-center space-x-2">
-                    <svg className={`w-5 h-5 ${resetMessage.type === 'success' ? 'text-green-500' : 'text-red-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      {resetMessage.type === 'success' ? (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      ) : (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      )}
-                    </svg>
-                    <span className="text-sm font-medium">{resetMessage.text}</span>
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      resetMessage.type === 'success' ? 'bg-emerald-900/30' : 'bg-red-900/30'
+                    }`}>
+                      <svg className={`w-4 h-4 ${resetMessage.type === 'success' ? 'text-emerald-400' : 'text-red-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {resetMessage.type === 'success' ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        ) : (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        )}
+                      </svg>
+                    </div>
+                    <span className={`text-sm font-medium ${resetMessage.type === 'success' ? 'text-emerald-300' : 'text-red-300'}`}>
+                      {resetMessage.text}
+                    </span>
                   </div>
                 </div>
               )}
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-4 pt-4">
                 <button
                   type="button"
                   onClick={closeForgotPasswordModal}
-                  className="flex-1 px-4 py-3 border border-gray-200 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-4 border-2 border-gray-700 rounded-xl font-semibold text-gray-300 hover:border-gray-600 hover:text-gray-200 transition-all duration-300 hover:shadow-md"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
                   disabled={resetLoading}
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 text-white py-4 rounded-xl font-semibold hover:from-cyan-700 hover:to-blue-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
                 >
                   {resetLoading ? (
                     <div className="flex items-center justify-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      <span>Sending...</span>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <span>Processing...</span>
                     </div>
                   ) : (
                     'Send Reset Link'
@@ -378,6 +449,24 @@ const Login = ({ onLoginSuccess, onNavigateToSignup }) => {
           </div>
         </div>
       )}
+
+      {/* Add custom animation styles */}
+      <style>{`
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };

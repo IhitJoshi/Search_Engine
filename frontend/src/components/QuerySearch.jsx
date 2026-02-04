@@ -88,7 +88,7 @@ const QuerySearch = () => {
           ))
         ) : (
           <p className="text-center text-gray-500 col-span-full">
-            No results found.
+            
           </p>
         )}
       </div>
