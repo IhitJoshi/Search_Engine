@@ -87,9 +87,9 @@ const Profile = ({ username = "User", onLogout }) => {
   }, [stocks]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-black relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-black relative">
       {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
         {/* Grid pattern */}
         <div className="absolute inset-0 opacity-5" style={{
           backgroundImage: `linear-gradient(to right, #1e293b 1px, transparent 1px),
@@ -113,7 +113,7 @@ const Profile = ({ username = "User", onLogout }) => {
       </div>
 
       {/* Header */}
-      <header className="relative bg-gray-900/80 backdrop-blur-xl border-b border-gray-800 shadow-2xl">
+      <header className="relative z-20 bg-gray-900/80 backdrop-blur-xl border-b border-gray-800 shadow-2xl">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           {/* Brand */}
           <div className="flex items-center space-x-3 group cursor-pointer" onClick={() => navigate("/home")}>
@@ -148,7 +148,7 @@ const Profile = ({ username = "User", onLogout }) => {
       <div className="max-w-7xl mx-auto px-6 py-8 relative z-10">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar */}
-          <aside className="lg:w-80 flex-shrink-0">
+          <aside className="lg:w-80 flex-shrink-0 relative z-10">
             <div className="bg-gray-800/40 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-700/50 p-6 sticky top-8">
               {/* User Profile Card */}
               <div className="text-center mb-8">
@@ -211,7 +211,7 @@ const Profile = ({ username = "User", onLogout }) => {
           </aside>
 
           {/* Main Content Panel */}
-          <main className="flex-1">
+          <main className="flex-1 relative z-10">
             <div className="bg-gray-800/40 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-700/50 p-8">
               {error && (
                 <div className="mb-6 p-4 rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-900/20 to-yellow-900/20 text-amber-300 text-sm flex items-center space-x-3">

@@ -94,7 +94,7 @@ const Home = ({ username, onLogout, onNavigateToSearch }) => {
       </div>
 
       {/* Header */}
-      <header className="relative bg-gray-900/80 backdrop-blur-xl border-b border-gray-800 shadow-2xl">
+      <header className="relative z-50 bg-gray-900/80 backdrop-blur-xl border-b border-gray-800 shadow-2xl">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           {/* Brand */}
           <div className="flex items-center space-x-3 group cursor-pointer">
@@ -130,7 +130,7 @@ const Home = ({ username, onLogout, onNavigateToSearch }) => {
             </button>
             
             {showProfileMenu && (
-              <div className="absolute right-0 mt-2 w-56 bg-gray-800/95 backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-20 overflow-hidden animate-fade-in">
+              <div className="absolute right-0 mt-2 w-56 bg-gray-800/95 backdrop-blur-xl rounded-xl shadow-2xl border border-gray-700 z-[100] overflow-hidden animate-fade-in">
                 <div className="p-4 border-b border-gray-700 bg-gradient-to-r from-gray-800 to-gray-900/50">
                   <p className="text-sm font-medium text-gray-100">{username}</p>
                   <p className="text-xs text-cyan-400 mt-1">Premium Trading Account</p>

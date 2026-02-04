@@ -35,8 +35,8 @@ const QuerySearch = () => {
     <div className="px-6">
       {/* 🔍 Search Bar */}
       <form onSubmit={handleSearch} className="max-w-3xl mx-auto mb-12">
-        <div className="relative flex items-center bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-          <div className="pl-6 text-gray-400">
+        <div className="relative flex items-center bg-gray-800/60 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-700 hover:border-cyan-500/50 transition-all duration-300 overflow-hidden group">
+          <div className="pl-6 text-gray-400 group-hover:text-cyan-400 transition-colors">
             <svg
               className="w-6 h-6"
               fill="none"
@@ -56,11 +56,11 @@ const QuerySearch = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search stocks, symbols, or sectors (e.g., AAPL, Technology, Tesla...)"
-            className="flex-1 px-6 py-5 text-lg outline-none bg-transparent placeholder-gray-400"
+            className="flex-1 px-6 py-5 text-lg outline-none bg-transparent text-gray-100 placeholder-gray-500 focus:placeholder-gray-400 transition-colors"
           />
           <button
             type="submit"
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-5 font-semibold"
+            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-8 py-5 font-semibold transition-all duration-300"
           >
             Search
           </button>
@@ -69,7 +69,7 @@ const QuerySearch = () => {
 
       {/* 🧠 Summary */}
       {summary && (
-        <p className="text-center text-gray-600 mb-8 transition-all">
+        <p className="text-center text-gray-400 mb-8 transition-all">
           {summary}
         </p>
       )}
