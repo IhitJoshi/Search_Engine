@@ -98,6 +98,7 @@ else:
         print("❌ FAIL: Non-tech stocks in results")
     if not all_negative:
         print("❌ FAIL: Growing stocks in results")
+        
 
 print("\n" + "=" * 60)
 print("TEST: 'healthcare stocks'")
