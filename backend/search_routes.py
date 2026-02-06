@@ -31,7 +31,7 @@ def search():
 
         query = data.get('query', '').strip()
         sector_filter = data.get('sector', '').strip()
-        limit = data.get('limit', 50)
+        limit = data.get('limit', 100)
 
         if query and len(query) > 500:
             raise APIError("Query too long")
@@ -162,7 +162,7 @@ def ai_search():
         if not data:
             return jsonify({"error": "No JSON data provided"}), 400
         query = data.get("query", "").strip()
-        limit = data.get("limit", 50)
+        limit = data.get("limit", 100)
         if not query:
             return jsonify({"error": "Empty query"}), 400
         if len(query) > 500:
