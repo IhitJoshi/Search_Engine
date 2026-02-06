@@ -1,49 +1,101 @@
 company_name,symbol,sector,industry,description,country,market_cap_billions
-Apple Inc.,AAPL,Technology,Consumer Electronics,"Apple designs a wide variety of consumer electronic devices, including smartphones, personal computers, tablets, wearables, and accessories.",USA,3500
-Microsoft Corporation,MSFT,Technology,Software—Infrastructure,"Microsoft develops and licenses consumer and enterprise software, including Windows operating systems and Office productivity suite.",USA,3000
-NVIDIA Corporation,NVDA,Technology,Semiconductors,NVIDIA is a leading manufacturer of graphics processing units for gaming and professional markets.,USA,1200
-Amazon.com Inc.,AMZN,Technology,Internet Retail,Amazon is a leading online retailer and cloud service provider with extensive e-commerce operations.,USA,1700
-Alphabet Inc.,GOOGL,Technology,Internet Content & Information,Google is the largest internet search engine and a dominant player in online advertising and cloud computing.,USA,1900
-Meta Platforms Inc.,META,Technology,Internet Content & Information,"Meta operates social networking platforms including Facebook, Instagram, and WhatsApp.",USA,1000
-Tesla Inc.,TSLA,Technology,Auto Manufacturers,"Tesla designs and manufactures electric vehicles, energy storage systems, and solar panels.",USA,800
-Broadcom Inc.,AVGO,Technology,Semiconductors,Broadcom designs and develops semiconductor and infrastructure software solutions.,USA,750
-Taiwan Semiconductor,TSM,Technology,Semiconductors,TSMC is the world's largest dedicated independent semiconductor foundry.,Taiwan,600
-Tencent Holdings,TCEHY,Technology,Internet Content & Information,Tencent is a Chinese technology conglomerate specializing in internet services and products.,China,500
-JPMorgan Chase,JPM,Financial Services,Banks—Diversified,JPMorgan Chase is a leading global financial services firm and largest bank in the US.,USA,500
-Bank of America,BAC,Financial Services,Banks—Diversified,Bank of America provides banking and financial products and services to individual and institutional clients.,USA,320
-Visa Inc.,V,Financial Services,Credit Services,Visa operates the world's largest electronic payment network.,USA,550
-Mastercard Inc.,MA,Financial Services,Credit Services,Mastercard provides payment processing and technology services worldwide.,USA,420
-PayPal Holdings,PYPL,Financial Services,Credit Services,PayPal operates an online payments system supporting online money transfers.,USA,70
-Block Inc.,SQ,Financial Services,Software—Infrastructure,Block provides payment and financial services technology for merchants and individuals.,USA,45
-Goldman Sachs,GS,Financial Services,Capital Markets,Goldman Sachs is a leading global investment banking and financial services firm.,USA,130
-Morgan Stanley,MS,Financial Services,Capital Markets,Morgan Stanley provides financial services including investment banking and wealth management.,USA,160
-American Express,AXP,Financial Services,Credit Services,American Express provides charge and credit card products and travel-related services.,USA,150
-Intuit Inc.,INTU,Financial Services,Software—Application,Intuit develops financial management and tax preparation software for individuals and businesses.,USA,160
-NextEra Energy,NEE,Energy,Utilities—Renewable,NextEra Energy is the world's largest producer of wind and solar energy.,USA,150
-Enphase Energy,ENPH,Energy,Solar,Enphase Energy designs and manufactures solar micro-inverters for residential solar systems.,USA,20
-First Solar,FSLR,Energy,Solar,First Solar manufactures photovoltaic solar modules using advanced thin film technology.,USA,25
-Vestas Wind Systems,VWS,Energy,Renewable Utilities,Vestas designs and manufactures wind turbines for renewable energy production.,Denmark,30
-Orsted A/S,ORSTED,Energy,Utilities Renewable,Orsted develops and operates offshore wind farms and renewable energy solutions.,Denmark,35
-Exxon Mobil,XOM,Energy,Oil & Gas Integrated,Exxon Mobil explores and produces crude oil and natural gas globally.,USA,480
-Chevron Corporation,CVX,Energy,Oil & Gas Integrated,Chevron engages in petroleum and natural gas exploration and production.,USA,320
-BP plc,BP,Energy,Oil & Gas Integrated,BP is a global integrated oil and gas company with operations in exploration and refining.,UK,110
-TotalEnergies SE,TTE,Energy,Oil & Gas Integrated,TotalEnergies is a French multinational integrated oil and gas company.,France,160
-Johnson & Johnson,JNJ,Healthcare,Drug Manufacturers—General,Johnson & Johnson develops pharmaceutical products and medical devices.,USA,380
-Pfizer Inc.,PFE,Healthcare,Drug Manufacturers—General,Pfizer discovers and develops medicines and vaccines for various therapeutic areas.,USA,160
-Merck & Co.,MRK,Healthcare,Drug Manufacturers—General,Merck provides health solutions through prescription medicines and vaccines.,USA,280
-Novartis AG,NVS,Healthcare,Drug Manufacturers—General,Novartis is a Swiss multinational pharmaceutical company focused on innovative medicines.,Switzerland,210
-Roche Holding,RHHBY,Healthcare,Drug Manufacturers—General,Roche is a Swiss pharmaceutical company specializing in diagnostics and pharmaceuticals.,Switzerland,260
-Amgen Inc.,AMGN,Healthcare,Biotechnology,Amgen discovers and develops human therapeutics using advanced cellular biology.,USA,150
-Gilead Sciences,GILD,Healthcare,Biotechnology,Gilead researches and develops medicines for life-threatening diseases.,USA,110
-Biogen Inc.,BIIB,Healthcare,Biotechnology,Biogen develops therapies for neurological and neurodegenerative diseases.,USA,35
-Regeneron Pharma,REGN,Healthcare,Biotechnology,Regeneron discovers and develops medicines for serious medical conditions.,USA,110
-Moderna Inc.,MRNA,Healthcare,Biotechnology,Moderna develops messenger RNA therapeutics and vaccines.,USA,45
-NIO Inc.,NIO,Automotive,Auto Manufacturers,NIO designs and manufactures premium electric vehicles for the Chinese market.,China,18
-Rivian Automotive,RIVN,Automotive,Auto Manufacturers,Rivian develops electric vehicles and accessories for outdoor adventures.,USA,15
-Lucid Group,LCID,Automotive,Auto Manufacturers,Lucid manufactures luxury electric vehicles with advanced technology.,USA,12
-BYD Company,BYD,Automotive,Auto Manufacturers,BYD is a Chinese manufacturer of electric vehicles and rechargeable batteries.,China,90
-Toyota Motor,TM,Automotive,Auto Manufacturers,Toyota is the world's largest automotive manufacturer by production volume.,Japan,320
-Honda Motor,HMC,Automotive,Auto Manufacturers,Honda manufactures automobiles and motorcycles globally.,Japan,55
-General Motors,GM,Automotive,Auto Manufacturers,General Motors designs and manufactures vehicles and automotive parts.,USA,55
-Ford Motor,F,Automotive,Auto Manufacturers,Ford designs and manufactures automobiles and commercial vehicles.,USA,45
-Stellantis NV,STLA,Automotive,Auto Manufacturers,Stellantis is a multinational automotive manufacturing corporation.,Netherlands,70
+Apple Inc.,AAPL,Technology,Consumer Electronics,"Apple designs consumer electronic devices, including smartphones, computers, and wearables.",USA,3500
+Microsoft Corporation,MSFT,Technology,Software Infrastructure,"Microsoft develops and licenses software, including Windows and Office.",USA,3000
+NVIDIA Corporation,NVDA,Technology,Semiconductors,"NVIDIA designs graphics processing units for gaming and data centers.",USA,1200
+Amazon.com Inc.,AMZN,Technology,Internet Retail,"Amazon operates e-commerce platforms and cloud computing services.",USA,1700
+Alphabet Inc.,GOOGL,Technology,Internet Content & Information,"Google provides search, advertising, and cloud products.",USA,1900
+Meta Platforms Inc.,META,Technology,Internet Content & Information,"Meta operates social networking platforms and messaging services.",USA,1000
+Tesla Inc.,TSLA,Technology,Auto Manufacturers,"Tesla designs electric vehicles, energy storage, and solar products.",USA,800
+Broadcom Inc.,AVGO,Technology,Semiconductors,"Broadcom designs semiconductors and infrastructure software.",USA,750
+Taiwan Semiconductor,TSM,Technology,Semiconductors,"TSMC is a leading independent semiconductor foundry.",Taiwan,600
+Tencent Holdings,TCEHY,Technology,Internet Content & Information,"Tencent provides internet services, gaming, and payments.",China,500
+ASML Holding,ASML,Technology,Semiconductors,"ASML makes lithography systems used in chip manufacturing.",Netherlands,400
+Oracle Corporation,ORCL,Technology,Software Infrastructure,"Oracle provides database and enterprise cloud software.",USA,320
+Netflix Inc.,NFLX,Technology,Entertainment,"Netflix operates a global streaming entertainment service.",USA,240
+Adobe Inc.,ADBE,Technology,Software Application,"Adobe builds creative, document, and marketing software.",USA,300
+Salesforce Inc.,CRM,Technology,Software Application,"Salesforce provides cloud CRM and enterprise applications.",USA,250
+Intel Corporation,INTC,Technology,Semiconductors,"Intel designs and manufactures microprocessors and chipsets.",USA,200
+Advanced Micro Devices,AMD,Technology,Semiconductors,"AMD designs CPUs and GPUs for PCs and data centers.",USA,250
+Qualcomm Inc.,QCOM,Technology,Semiconductors,"Qualcomm designs wireless chipsets and licensing technology.",USA,180
+Cisco Systems,CSCO,Technology,Communication Equipment,"Cisco provides networking hardware and software solutions.",USA,220
+SAP SE,SAP,Technology,Software Application,"SAP provides enterprise resource planning software.",Germany,200
+JPMorgan Chase,JPM,Financial Services,Banks Diversified,"JPMorgan Chase provides banking and financial services globally.",USA,500
+Bank of America,BAC,Financial Services,Banks Diversified,"Bank of America provides consumer and commercial banking.",USA,320
+Visa Inc.,V,Financial Services,Credit Services,"Visa operates a global electronic payment network.",USA,550
+Mastercard Inc.,MA,Financial Services,Credit Services,"Mastercard provides payment processing services worldwide.",USA,420
+PayPal Holdings,PYPL,Financial Services,Credit Services,"PayPal operates online payments and money transfers.",USA,70
+Block Inc.,SQ,Financial Services,Software Infrastructure,"Block provides payment and financial technology services.",USA,45
+Goldman Sachs,GS,Financial Services,Capital Markets,"Goldman Sachs provides investment banking and asset management.",USA,130
+Morgan Stanley,MS,Financial Services,Capital Markets,"Morgan Stanley provides investment banking and wealth management.",USA,160
+American Express,AXP,Financial Services,Credit Services,"American Express provides charge and credit card services.",USA,150
+Intuit Inc.,INTU,Financial Services,Software Application,"Intuit develops financial management and tax software.",USA,160
+Wells Fargo,WFC,Financial Services,Banks Diversified,"Wells Fargo provides banking, lending, and wealth services.",USA,220
+Citigroup Inc.,C,Financial Services,Banks Diversified,"Citigroup provides banking and financial services globally.",USA,120
+Bank of New York Mellon,BK,Financial Services,Asset Management,"BNY Mellon provides asset servicing and management.",USA,70
+U.S. Bancorp,USB,Financial Services,Banks Regional,"U.S. Bancorp provides consumer and commercial banking.",USA,80
+Charles Schwab,SCHW,Financial Services,Capital Markets,"Schwab provides brokerage, banking, and asset management.",USA,130
+BlackRock,BLK,Financial Services,Asset Management,"BlackRock provides asset management and investment services.",USA,150
+PNC Financial,PNC,Financial Services,Banks Regional,"PNC provides retail and corporate banking services.",USA,60
+Truist Financial,TFC,Financial Services,Banks Regional,"Truist provides banking, lending, and wealth services.",USA,50
+Capital One,COF,Financial Services,Credit Services,"Capital One provides credit cards and consumer banking.",USA,50
+CME Group,CME,Financial Services,Financial Exchanges,"CME operates derivatives and futures exchanges.",USA,80
+NextEra Energy,NEE,Energy,Utilities Renewable,"NextEra Energy is a leading producer of wind and solar power.",USA,150
+Enphase Energy,ENPH,Energy,Solar,"Enphase designs solar micro-inverters and energy systems.",USA,20
+First Solar,FSLR,Energy,Solar,"First Solar manufactures thin film solar modules.",USA,25
+Vestas Wind Systems,VWS.CO,Energy,Renewable Utilities,"Vestas designs and manufactures wind turbines.",Denmark,30
+Orsted A/S,ORSTED.CO,Energy,Utilities Renewable,"Orsted develops and operates offshore wind farms.",Denmark,35
+Exxon Mobil,XOM,Energy,Oil & Gas Integrated,"Exxon Mobil explores and produces oil and gas globally.",USA,480
+Chevron Corporation,CVX,Energy,Oil & Gas Integrated,"Chevron engages in petroleum and natural gas operations.",USA,320
+BP plc,BP,Energy,Oil & Gas Integrated,"BP is a global integrated oil and gas company.",UK,110
+TotalEnergies SE,TTE,Energy,Oil & Gas Integrated,"TotalEnergies is a multinational integrated energy company.",France,160
+Shell plc,SHEL,Energy,Oil & Gas Integrated,"Shell operates in oil, gas, and energy transition businesses.",UK,200
+ConocoPhillips,COP,Energy,Oil & Gas E&P,"ConocoPhillips produces crude oil and natural gas.",USA,140
+SLB,SLB,Energy,Oil & Gas Equipment & Services,"SLB provides oilfield services and technology.",USA,80
+EOG Resources,EOG,Energy,Oil & Gas E&P,"EOG explores and produces crude oil and natural gas.",USA,120
+Phillips 66,PSX,Energy,Oil & Gas Refining & Marketing,"Phillips 66 operates refining, midstream, and marketing.",USA,60
+Marathon Petroleum,MPC,Energy,Oil & Gas Refining & Marketing,"Marathon Petroleum operates refining and midstream assets.",USA,70
+Valero Energy,VLO,Energy,Oil & Gas Refining & Marketing,"Valero operates oil refineries and ethanol plants.",USA,40
+ONEOK,OKE,Energy,Oil & Gas Midstream,"ONEOK provides natural gas gathering and processing.",USA,60
+Kinder Morgan,KMI,Energy,Oil & Gas Midstream,"Kinder Morgan operates pipelines and terminals.",USA,40
+Halliburton,HAL,Energy,Oil & Gas Equipment & Services,"Halliburton provides drilling and completion services.",USA,25
+Enbridge,ENB,Energy,Oil & Gas Midstream,"Enbridge operates energy transportation infrastructure.",Canada,90
+Johnson & Johnson,JNJ,Healthcare,Drug Manufacturers General,"Johnson & Johnson develops pharmaceuticals and medical devices.",USA,380
+Pfizer Inc.,PFE,Healthcare,Drug Manufacturers General,"Pfizer develops medicines and vaccines.",USA,160
+Merck & Co.,MRK,Healthcare,Drug Manufacturers General,"Merck develops pharmaceuticals and vaccines.",USA,280
+Novartis AG,NVS,Healthcare,Drug Manufacturers General,"Novartis develops innovative medicines.",Switzerland,210
+Roche Holding,RHHBY,Healthcare,Drug Manufacturers General,"Roche develops pharmaceuticals and diagnostics.",Switzerland,260
+Amgen Inc.,AMGN,Healthcare,Biotechnology,"Amgen develops biologic medicines for serious diseases.",USA,150
+Gilead Sciences,GILD,Healthcare,Biotechnology,"Gilead develops antivirals and specialty medicines.",USA,110
+Biogen Inc.,BIIB,Healthcare,Biotechnology,"Biogen develops therapies for neurological diseases.",USA,35
+Regeneron Pharma,REGN,Healthcare,Biotechnology,"Regeneron develops medicines for serious conditions.",USA,110
+Moderna Inc.,MRNA,Healthcare,Biotechnology,"Moderna develops mRNA-based therapeutics and vaccines.",USA,45
+UnitedHealth Group,UNH,Healthcare,Healthcare Plans,"UnitedHealth provides health insurance and services.",USA,450
+AbbVie Inc.,ABBV,Healthcare,Drug Manufacturers General,"AbbVie develops immunology and oncology medicines.",USA,300
+Eli Lilly,LLY,Healthcare,Drug Manufacturers General,"Eli Lilly develops medicines for diabetes and oncology.",USA,700
+Bristol-Myers Squibb,BMY,Healthcare,Drug Manufacturers General,"Bristol-Myers develops biopharmaceutical products.",USA,140
+AstraZeneca,AZN,Healthcare,Drug Manufacturers General,"AstraZeneca develops medicines in oncology and cardiology.",UK,220
+Sanofi,SNY,Healthcare,Drug Manufacturers General,"Sanofi develops medicines and vaccines worldwide.",France,120
+Intuitive Surgical,ISRG,Healthcare,Medical Devices,"Intuitive Surgical develops robotic surgical systems.",USA,150
+Medtronic,MDT,Healthcare,Medical Devices,"Medtronic develops medical devices and therapies.",Ireland,110
+Vertex Pharmaceuticals,VRTX,Healthcare,Biotechnology,"Vertex develops therapies for serious diseases.",USA,120
+Zoetis,ZTS,Healthcare,Drug Manufacturers Specialty & Generic,"Zoetis develops medicines and vaccines for animals.",USA,90
+NIO Inc.,NIO,Automotive,Auto Manufacturers,"NIO designs and manufactures electric vehicles in China.",China,18
+Rivian Automotive,RIVN,Automotive,Auto Manufacturers,"Rivian builds electric vehicles and accessories.",USA,15
+Lucid Group,LCID,Automotive,Auto Manufacturers,"Lucid manufactures luxury electric vehicles.",USA,12
+BYD Company,BYDDY,Automotive,Auto Manufacturers,"BYD manufactures electric vehicles and batteries.",China,90
+Toyota Motor,TM,Automotive,Auto Manufacturers,"Toyota manufactures vehicles and hybrid technology.",Japan,320
+Honda Motor,HMC,Automotive,Auto Manufacturers,"Honda manufactures automobiles and motorcycles.",Japan,55
+General Motors,GM,Automotive,Auto Manufacturers,"General Motors manufactures vehicles and auto parts.",USA,55
+Ford Motor,F,Automotive,Auto Manufacturers,"Ford manufactures automobiles and commercial vehicles.",USA,45
+Stellantis NV,STLA,Automotive,Auto Manufacturers,"Stellantis manufactures vehicles and brands globally.",Netherlands,70
+Volkswagen AG,VWAGY,Automotive,Auto Manufacturers,"Volkswagen manufactures vehicles and mobility services.",Germany,80
+PACCAR,PCAR,Automotive,Auto Manufacturers,"PACCAR manufactures heavy duty trucks and components.",USA,55
+Magna International,MGA,Automotive,Auto Parts,"Magna supplies auto parts and contract manufacturing.",Canada,25
+Lear Corporation,LEA,Automotive,Auto Parts,"Lear manufactures seating and electrical systems.",USA,15
+BorgWarner,BWA,Automotive,Auto Parts,"BorgWarner supplies powertrain and propulsion systems.",USA,12
+Aptiv,APTV,Automotive,Auto Parts,"Aptiv provides vehicle architectures and safety systems.",USA,20
+BMW AG,BMWYY,Automotive,Auto Manufacturers,"BMW manufactures premium vehicles and motorcycles.",Germany,60
+Porsche AG,POAHY,Automotive,Auto Manufacturers,"Porsche manufactures performance vehicles.",Germany,70
+Ferrari NV,RACE,Automotive,Auto Manufacturers,"Ferrari designs and manufactures luxury sports cars.",Italy,70
+Tata Motors,TTM,Automotive,Auto Manufacturers,"Tata Motors manufactures passenger and commercial vehicles.",India,35
+Nissan Motor,NSANY,Automotive,Auto Manufacturers,"Nissan manufactures vehicles and mobility services.",Japan,20

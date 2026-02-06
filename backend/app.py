@@ -25,22 +25,27 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Configuration - 48 Stock Portfolio
+# Configuration - 100 Stock Portfolio
 STOCK_SYMBOLS = [
     # Technology - Big Tech > 500B
     "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA", "AVGO", "TSM", "TCEHY",
+    "ASML", "ORCL", "NFLX", "ADBE", "CRM", "INTC", "AMD", "QCOM", "CSCO", "SAP",
     
     # Finance - Top Banks vs Fintech
     "JPM", "BAC", "V", "MA", "PYPL", "SQ", "GS", "MS", "AXP", "INTU",
+    "WFC", "C", "BK", "USB", "SCHW", "BLK", "PNC", "TFC", "COF", "CME",
     
     # Energy - Renewable vs Non-Renewable
     "NEE", "ENPH", "FSLR", "VWS.CO", "ORSTED.CO", "XOM", "CVX", "BP", "TTE", "SHEL",
+    "COP", "SLB", "EOG", "PSX", "MPC", "VLO", "OKE", "KMI", "HAL", "ENB",
     
     # Healthcare - Pharma vs Biotech
     "JNJ", "PFE", "MRK", "NVS", "RHHBY", "AMGN", "GILD", "BIIB", "REGN", "MRNA",
+    "UNH", "ABBV", "LLY", "BMY", "AZN", "SNY", "ISRG", "MDT", "VRTX", "ZTS",
     
     # Automotive - EV vs Traditional
-    "NIO", "RIVN", "LCID", "BYD", "TM", "HMC", "GM", "F", "STLA", "VWAGY"
+    "NIO", "RIVN", "LCID", "BYDDY", "TM", "HMC", "GM", "F", "STLA", "VWAGY",
+    "PCAR", "MGA", "LEA", "BWA", "APTV", "BMWYY", "POAHY", "RACE", "TTM", "NSANY"
 ]
 
 # Sector mapping - maps stock symbols to our standardized sectors
@@ -48,28 +53,39 @@ SECTOR_MAPPING = {
     # Technology
     "AAPL": "Technology", "MSFT": "Technology", "NVDA": "Technology", "AMZN": "Technology",
     "GOOGL": "Technology", "META": "Technology", "TSLA": "Technology", "AVGO": "Technology",
-    "TSM": "Technology", "TCEHY": "Technology",
+    "TSM": "Technology", "TCEHY": "Technology", "ASML": "Technology", "ORCL": "Technology",
+    "NFLX": "Technology", "ADBE": "Technology", "CRM": "Technology", "INTC": "Technology",
+    "AMD": "Technology", "QCOM": "Technology", "CSCO": "Technology", "SAP": "Technology",
     
     # Financial Services
     "JPM": "Financial Services", "BAC": "Financial Services", "V": "Financial Services",
     "MA": "Financial Services", "PYPL": "Financial Services", "SQ": "Financial Services",
     "GS": "Financial Services", "MS": "Financial Services", "AXP": "Financial Services",
-    "INTU": "Financial Services",
+    "INTU": "Financial Services", "WFC": "Financial Services", "C": "Financial Services",
+    "BK": "Financial Services", "USB": "Financial Services", "SCHW": "Financial Services",
+    "BLK": "Financial Services", "PNC": "Financial Services", "TFC": "Financial Services",
+    "COF": "Financial Services", "CME": "Financial Services",
     
     # Energy
     "NEE": "Energy", "ENPH": "Energy", "FSLR": "Energy", "VWS.CO": "Energy",
     "ORSTED.CO": "Energy", "XOM": "Energy", "CVX": "Energy", "BP": "Energy", "TTE": "Energy",
-    "SHEL": "Energy",
+    "SHEL": "Energy", "COP": "Energy", "SLB": "Energy", "EOG": "Energy", "PSX": "Energy",
+    "MPC": "Energy", "VLO": "Energy", "OKE": "Energy", "KMI": "Energy", "HAL": "Energy",
+    "ENB": "Energy",
     
     # Healthcare
     "JNJ": "Healthcare", "PFE": "Healthcare", "MRK": "Healthcare", "NVS": "Healthcare",
     "RHHBY": "Healthcare", "AMGN": "Healthcare", "GILD": "Healthcare", "BIIB": "Healthcare",
-    "REGN": "Healthcare", "MRNA": "Healthcare",
+    "REGN": "Healthcare", "MRNA": "Healthcare", "UNH": "Healthcare", "ABBV": "Healthcare",
+    "LLY": "Healthcare", "BMY": "Healthcare", "AZN": "Healthcare", "SNY": "Healthcare",
+    "ISRG": "Healthcare", "MDT": "Healthcare", "VRTX": "Healthcare", "ZTS": "Healthcare",
     
     # Automotive
-    "NIO": "Automotive", "RIVN": "Automotive", "LCID": "Automotive", "BYD": "Automotive",
+    "NIO": "Automotive", "RIVN": "Automotive", "LCID": "Automotive", "BYDDY": "Automotive",
     "TM": "Automotive", "HMC": "Automotive", "GM": "Automotive", "F": "Automotive",
-    "STLA": "Automotive", "VWAGY": "Automotive"
+    "STLA": "Automotive", "VWAGY": "Automotive", "PCAR": "Automotive", "MGA": "Automotive",
+    "LEA": "Automotive", "BWA": "Automotive", "APTV": "Automotive", "BMWYY": "Automotive",
+    "POAHY": "Automotive", "RACE": "Automotive", "TTM": "Automotive", "NSANY": "Automotive"
 }
 
 UPDATE_INTERVAL = 60  # seconds

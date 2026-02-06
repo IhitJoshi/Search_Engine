@@ -15,18 +15,23 @@ DATABASE_NAME = "stocks.db"
 STOCK_SYMBOLS = [
     # Technology - Big Tech > 500B
     "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA", "AVGO", "TSM", "TCEHY",
+    "ASML", "ORCL", "NFLX", "ADBE", "CRM", "INTC", "AMD", "QCOM", "CSCO", "SAP",
     
     # Finance - Top Banks vs Fintech
     "JPM", "BAC", "V", "MA", "PYPL", "SQ", "GS", "MS", "AXP", "INTU",
+    "WFC", "C", "BK", "USB", "SCHW", "BLK", "PNC", "TFC", "COF", "CME",
     
     # Energy - Renewable vs Non-Renewable
     "NEE", "ENPH", "FSLR", "VWS.CO", "ORSTED.CO", "XOM", "CVX", "BP", "TTE", "SHEL",
+    "COP", "SLB", "EOG", "PSX", "MPC", "VLO", "OKE", "KMI", "HAL", "ENB",
     
     # Healthcare - Pharma vs Biotech
     "JNJ", "PFE", "MRK", "NVS", "RHHBY", "AMGN", "GILD", "BIIB", "REGN", "MRNA",
+    "UNH", "ABBV", "LLY", "BMY", "AZN", "SNY", "ISRG", "MDT", "VRTX", "ZTS",
     
     # Automotive - EV vs Traditional
-    "NIO", "RIVN", "LCID", "BYD", "TM", "HMC", "GM", "F", "STLA", "VWAGY"
+    "NIO", "RIVN", "LCID", "BYDDY", "TM", "HMC", "GM", "F", "STLA", "VWAGY",
+    "PCAR", "MGA", "LEA", "BWA", "APTV", "BMWYY", "POAHY", "RACE", "TTM", "NSANY"
 ]
 UPDATE_INTERVAL = 60  # seconds
 

@@ -253,3 +253,215 @@
 2025-10-21 17:13:52,310 - ERROR - Database error for AAPL: table stocks has no column named volume
 2025-10-21 17:13:53,989 - ERROR - Database error for MSFT: table stocks has no column named volume
 2025-10-21 17:13:55,536 - ERROR - Database error for GOOG: table stocks has no column named volume
+2026-02-06 23:35:11,760 - INFO - Database 'stocks.db' initialized with 'stocks' table
+2026-02-06 23:35:11,761 - INFO - Fetching data for 100 stocks...
+2026-02-06 23:35:13,487 - ERROR - Database error for AAPL: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:35:15,462 - ERROR - Database error for MSFT: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:35:17,020 - ERROR - Database error for NVDA: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:35:18,568 - ERROR - Database error for AMZN: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:35:20,537 - ERROR - Database error for GOOGL: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:35:22,566 - ERROR - Database error for META: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:35:24,289 - ERROR - Database error for TSLA: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:35:25,859 - ERROR - Database error for AVGO: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:35:27,758 - ERROR - Database error for TSM: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:35:29,482 - ERROR - Database error for TCEHY: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:35:31,398 - INFO - [23:35:31] ASML: $1412.34 (+4.61%)
+2026-02-06 23:35:33,178 - INFO - [23:35:33] ORCL: $142.41 (+4.35%)
+2026-02-06 23:35:34,933 - INFO - [23:35:34] NFLX: $81.38 (+0.62%)
+2026-02-06 23:35:36,820 - INFO - [23:35:36] ADBE: $267.73 (-0.62%)
+2026-02-06 23:35:38,739 - INFO - [23:35:38] CRM: $188.49 (-0.78%)
+2026-02-06 23:35:40,666 - INFO - [23:35:40] INTC: $51.15 (+6.02%)
+2026-02-06 23:35:42,390 - INFO - [23:35:42] AMD: $208.36 (+8.24%)
+2026-02-06 23:35:44,354 - INFO - [23:35:44] QCOM: $138.36 (+1.51%)
+2026-02-06 23:35:46,357 - INFO - [23:35:46] CSCO: $84.06 (+2.06%)
+2026-02-06 23:35:48,322 - INFO - [23:35:48] SAP: $202.35 (+2.50%)
+2026-02-06 23:35:50,144 - ERROR - Database error for JPM: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:35:51,824 - ERROR - Database error for BAC: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:35:53,682 - ERROR - Database error for V: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:35:55,208 - ERROR - Database error for MA: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:35:57,159 - ERROR - Database error for PYPL: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:35:58,859 - INFO - Database 'stocks.db' initialized with 'stocks' table
+2026-02-06 23:35:58,859 - INFO - Fetching data for 100 stocks...
+2026-02-06 23:35:59,845 - ERROR - $SQ: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+2026-02-06 23:35:59,846 - WARNING - Skipping invalid data for SQ
+2026-02-06 23:36:00,072 - ERROR - Database error for AAPL: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:01,433 - ERROR - Database error for GS: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:01,625 - ERROR - Database error for MSFT: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:03,169 - ERROR - Database error for NVDA: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:03,180 - ERROR - Database error for MS: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:04,859 - ERROR - Database error for AMZN: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:05,220 - ERROR - Database error for AXP: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:06,442 - ERROR - Database error for GOOGL: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:06,971 - ERROR - Database error for INTU: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:08,016 - ERROR - Database error for META: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:08,919 - INFO - [23:36:08] WFC: $94.27 (+2.95%)
+2026-02-06 23:36:09,613 - ERROR - Database error for TSLA: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:10,773 - INFO - [23:36:10] C: $122.93 (+6.21%)
+2026-02-06 23:36:11,481 - ERROR - Database error for AVGO: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:12,528 - INFO - [23:36:12] BK: $123.62 (+2.58%)
+2026-02-06 23:36:13,052 - ERROR - Database error for TSM: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:14,588 - INFO - [23:36:14] USB: $60.84 (+2.92%)
+2026-02-06 23:36:14,708 - ERROR - Database error for TCEHY: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:16,671 - INFO - [23:36:16] SCHW: $104.40 (+2.35%)
+2026-02-06 23:36:17,059 - ERROR - Database error for ASML: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:18,458 - INFO - [23:36:18] BLK: $1048.78 (-0.57%)
+2026-02-06 23:36:18,631 - ERROR - Database error for ORCL: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:20,304 - INFO - [23:36:20] PNC: $243.36 (+2.03%)
+2026-02-06 23:36:20,385 - ERROR - Database error for NFLX: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:21,917 - ERROR - Database error for ADBE: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:22,193 - INFO - [23:36:22] TFC: $55.76 (+1.12%)
+2026-02-06 23:36:23,465 - ERROR - Database error for CRM: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:23,991 - INFO - [23:36:23] COF: $223.94 (+3.23%)
+2026-02-06 23:36:25,060 - ERROR - Database error for INTC: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:25,730 - INFO - [23:36:25] CME: $298.11 (+0.25%)
+2026-02-06 23:36:26,636 - ERROR - Database error for AMD: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:27,692 - ERROR - Database error for NEE: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:28,349 - ERROR - Database error for QCOM: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:29,366 - ERROR - Database error for ENPH: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:29,920 - ERROR - Database error for CSCO: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:31,190 - ERROR - Database error for FSLR: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:31,815 - ERROR - Database error for SAP: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:33,202 - ERROR - Database error for VWS.CO: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:33,444 - ERROR - Database error for JPM: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:35,079 - ERROR - Database error for ORSTED.CO: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:35,139 - ERROR - Database error for BAC: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:36,690 - ERROR - Database error for V: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:36,910 - ERROR - Database error for XOM: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:38,238 - ERROR - Database error for MA: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:38,507 - ERROR - Database error for CVX: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:39,808 - ERROR - Database error for PYPL: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:40,566 - ERROR - Database error for BP: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:42,131 - ERROR - Database error for TTE: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:42,629 - ERROR - $SQ: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+2026-02-06 23:36:42,631 - WARNING - Skipping invalid data for SQ
+2026-02-06 23:36:43,917 - ERROR - Database error for SHEL: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:44,224 - ERROR - Database error for GS: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:45,789 - INFO - [23:36:45] COP: $107.21 (+2.12%)
+2026-02-06 23:36:46,030 - ERROR - Database error for MS: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:47,764 - INFO - [23:36:47] SLB: $51.12 (+3.26%)
+2026-02-06 23:36:48,372 - ERROR - Database error for AXP: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:49,620 - INFO - [23:36:49] EOG: $113.12 (+0.56%)
+2026-02-06 23:36:49,962 - ERROR - Database error for INTU: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:51,475 - INFO - [23:36:51] PSX: $158.35 (+2.54%)
+2026-02-06 23:36:51,500 - ERROR - Database error for WFC: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:53,059 - ERROR - Database error for C: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:53,456 - INFO - [23:36:53] MPC: $202.37 (+3.34%)
+2026-02-06 23:36:54,630 - ERROR - Database error for BK: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:55,336 - INFO - [23:36:55] VLO: $201.04 (+3.56%)
+2026-02-06 23:36:56,229 - ERROR - Database error for USB: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:57,356 - INFO - [23:36:57] OKE: $81.42 (+1.20%)
+2026-02-06 23:36:57,821 - ERROR - Database error for SCHW: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:36:59,223 - INFO - [23:36:59] KMI: $30.43 (+0.33%)
+2026-02-06 23:36:59,341 - ERROR - Database error for BLK: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:00,897 - ERROR - Database error for PNC: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:01,050 - INFO - [23:37:01] HAL: $34.89 (+3.10%)
+2026-02-06 23:37:02,467 - ERROR - Database error for TFC: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:02,975 - INFO - [23:37:02] ENB: $50.24 (-0.49%)
+2026-02-06 23:37:04,191 - ERROR - Database error for COF: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:04,754 - ERROR - Database error for JNJ: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:06,158 - ERROR - Database error for CME: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:07,022 - ERROR - Database error for PFE: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:07,935 - ERROR - Database error for NEE: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:08,890 - ERROR - Database error for MRK: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:09,570 - ERROR - Database error for ENPH: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:11,063 - ERROR - Database error for NVS: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:11,257 - ERROR - Database error for FSLR: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:12,787 - ERROR - Database error for RHHBY: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:12,789 - ERROR - Database error for VWS.CO: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:14,338 - ERROR - Database error for ORSTED.CO: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:14,507 - ERROR - Database error for AMGN: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:16,117 - ERROR - Database error for XOM: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:16,253 - ERROR - Database error for GILD: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:17,689 - ERROR - Database error for CVX: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:18,063 - ERROR - Database error for BIIB: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:19,559 - ERROR - Database error for BP: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:19,795 - ERROR - Database error for REGN: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:21,189 - ERROR - Database error for TTE: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:21,610 - ERROR - Database error for MRNA: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:22,854 - ERROR - Database error for SHEL: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:23,376 - INFO - [23:37:23] UNH: $275.96 (+2.76%)
+2026-02-06 23:37:24,461 - ERROR - Database error for COP: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:25,385 - INFO - [23:37:25] ABBV: $223.76 (+2.16%)
+2026-02-06 23:37:26,127 - ERROR - Database error for SLB: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:27,136 - INFO - [23:37:27] LLY: $1043.32 (+2.20%)
+2026-02-06 23:37:27,679 - ERROR - Database error for EOG: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:29,170 - INFO - [23:37:29] BMY: $61.70 (+3.65%)
+2026-02-06 23:37:29,353 - ERROR - Database error for PSX: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:30,885 - INFO - [23:37:30] AZN: $192.72 (+2.97%)
+2026-02-06 23:37:30,906 - ERROR - Database error for MPC: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:32,455 - ERROR - Database error for VLO: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:32,597 - INFO - [23:37:32] SNY: $47.76 (+0.56%)
+2026-02-06 23:37:34,138 - ERROR - Database error for OKE: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:34,332 - INFO - [23:37:34] ISRG: $487.69 (+2.39%)
+2026-02-06 23:37:35,704 - ERROR - Database error for KMI: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:36,194 - INFO - [23:37:36] MDT: $102.04 (-0.88%)
+2026-02-06 23:37:37,532 - ERROR - Database error for HAL: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:37,931 - INFO - [23:37:37] VRTX: $472.43 (+2.97%)
+2026-02-06 23:37:39,218 - ERROR - Database error for ENB: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:39,886 - INFO - [23:37:39] ZTS: $126.65 (-0.06%)
+2026-02-06 23:37:40,787 - ERROR - Database error for JNJ: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:41,618 - ERROR - Database error for NIO: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:42,340 - ERROR - Database error for PFE: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:43,338 - ERROR - Database error for RIVN: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:43,947 - ERROR - Database error for MRK: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:45,059 - ERROR - Database error for LCID: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:45,509 - ERROR - Database error for NVS: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:46,861 - INFO - [23:37:46] BYDDY: $12.02 (+4.43%)
+2026-02-06 23:37:47,047 - ERROR - Database error for RHHBY: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:48,417 - ERROR - Database error for TM: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:48,651 - ERROR - Database error for AMGN: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:49,947 - ERROR - Database error for HMC: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:50,864 - ERROR - Database error for GILD: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:51,695 - ERROR - Database error for GM: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:52,417 - ERROR - Database error for BIIB: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:53,265 - ERROR - Database error for F: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:54,171 - ERROR - Database error for REGN: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:54,835 - ERROR - Database error for STLA: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:55,744 - ERROR - Database error for MRNA: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:56,422 - ERROR - Database error for VWAGY: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:57,427 - ERROR - Database error for UNH: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:37:58,678 - INFO - [23:37:58] PCAR: $126.70 (-0.56%)
+2026-02-06 23:37:59,021 - ERROR - Database error for ABBV: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:00,504 - INFO - [23:38:00] MGA: $53.39 (+1.41%)
+2026-02-06 23:38:00,592 - ERROR - Database error for LLY: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:02,146 - ERROR - Database error for BMY: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:02,245 - INFO - [23:38:02] LEA: $139.86 (+2.80%)
+2026-02-06 23:38:03,715 - ERROR - Database error for AZN: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:04,012 - INFO - [23:38:04] BWA: $51.65 (+2.56%)
+2026-02-06 23:38:05,302 - ERROR - Database error for SNY: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:05,975 - INFO - [23:38:05] APTV: $81.18 (+1.83%)
+2026-02-06 23:38:06,901 - ERROR - Database error for ISRG: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:08,592 - ERROR - Database error for MDT: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:08,613 - ERROR - $BMWYY: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+2026-02-06 23:38:08,614 - WARNING - Skipping invalid data for BMWYY
+2026-02-06 23:38:10,170 - ERROR - Database error for VRTX: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:10,345 - INFO - [23:38:10] POAHY: $4.10 (-0.97%)
+2026-02-06 23:38:11,736 - ERROR - Database error for ZTS: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:12,160 - INFO - [23:38:12] RACE: $333.31 (-0.43%)
+2026-02-06 23:38:13,454 - ERROR - Database error for NIO: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:15,014 - ERROR - Database error for RIVN: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:15,035 - ERROR - $TTM: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+2026-02-06 23:38:15,035 - WARNING - Skipping invalid data for TTM
+2026-02-06 23:38:16,567 - ERROR - Database error for LCID: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:16,824 - INFO - [23:38:16] NSANY: $5.33 (+5.96%)
+2026-02-06 23:38:17,826 - INFO - Successfully updated 100/100 stocks
+2026-02-06 23:38:18,138 - ERROR - Database error for BYDDY: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:19,829 - ERROR - Database error for TM: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:22,078 - ERROR - Database error for HMC: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:24,117 - ERROR - Database error for GM: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:25,932 - ERROR - Database error for F: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:27,504 - ERROR - Database error for STLA: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:29,053 - ERROR - Database error for VWAGY: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:30,862 - ERROR - Database error for PCAR: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:32,430 - ERROR - Database error for MGA: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:34,011 - ERROR - Database error for LEA: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:35,584 - ERROR - Database error for BWA: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:37,136 - ERROR - Database error for APTV: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:40,030 - ERROR - $BMWYY: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+2026-02-06 23:38:40,031 - WARNING - Skipping invalid data for BMWYY
+2026-02-06 23:38:41,603 - ERROR - Database error for POAHY: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:43,181 - ERROR - Database error for RACE: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:46,136 - ERROR - $TTM: possibly delisted; no price data found  (period=1d) (Yahoo error = "No data found, symbol may be delisted")
+2026-02-06 23:38:46,136 - WARNING - Skipping invalid data for TTM
+2026-02-06 23:38:47,715 - ERROR - Database error for NSANY: UNIQUE constraint failed: stocks.symbol
+2026-02-06 23:38:48,715 - INFO - Successfully updated 100/100 stocks
