@@ -11,12 +11,12 @@ const Home = ({ username, onLogout, onNavigateToSearch }) => {
 
   // Categories for the boxes - matching actual database sectors
   const categories = [
-    { name: "Technology", icon: "🚀", filter: "Technology", limit: 10, color: "from-cyan-500 to-blue-600" },
-    { name: "Finance", icon: "📊", filter: "Financial Services", limit: 10, color: "from-emerald-500 to-green-600" },
-    { name: "Energy", icon: "⚡", filter: "Energy", limit: 10, color: "from-amber-500 to-orange-600" },
-    { name: "Healthcare", icon: "🏥", filter: "Healthcare", limit: 10, color: "from-rose-500 to-pink-600" },
-    { name: "Automotive", icon: "🚗", filter: "Automotive", limit: 10, color: "from-violet-500 to-purple-600" },
-    { name: "All Stocks", icon: "📈", filter: "", limit: 50, color: "from-indigo-500 to-purple-600" },
+    { name: "Technology", icon: "🚀", filter: "Technology", limit: 20, color: "from-cyan-500 to-blue-600" },
+    { name: "Finance", icon: "📊", filter: "Financial Services", limit: 20, color: "from-emerald-500 to-green-600" },
+    { name: "Energy", icon: "⚡", filter: "Energy", limit: 20, color: "from-amber-500 to-orange-600" },
+    { name: "Healthcare", icon: "🏥", filter: "Healthcare", limit: 20, color: "from-rose-500 to-pink-600" },
+    { name: "Automotive", icon: "🚗", filter: "Automotive", limit: 20, color: "from-violet-500 to-purple-600" },
+    { name: "All Stocks", icon: "📈", filter: "", limit: 100, color: "from-indigo-500 to-purple-600" },
   ];
 
   // Fetch stocks for ticker
@@ -45,9 +45,9 @@ const Home = ({ username, onLogout, onNavigateToSearch }) => {
 
   const handleCategoryClick = (category) => {
     if (category.filter === "") {
-      onNavigateToSearch("", category.limit || 50);
+      onNavigateToSearch("", category.limit || 100);
     } else {
-      onNavigateToSearch(category.filter, category.limit || 10);
+      onNavigateToSearch(category.filter, category.limit || 20);
     }
   };
 
