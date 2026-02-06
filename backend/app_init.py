@@ -11,10 +11,19 @@ from preprocessing import load_dataset, tokenize_all_columns
 from search import search_engine
 import os
 
+# Import optimization modules
+from cache_manager import start_cache_cleanup_thread
+from optimized_routes import register_optimized_routes
+from performance_utils import configure_logging, metrics
+
 load_dotenv()
 
-# Setup logging
-logging.basicConfig(level=logging.INFO)
+# Setup optimized logging
+configure_logging(
+    level=logging.INFO,
+    log_file='flask_log.txt',
+    json_format=False
+)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
@@ -77,12 +86,18 @@ threading.Thread(target=initialize_stock_system, daemon=True).start()
 # Initialize database
 init_db()
 
+# Start cache cleanup thread
+start_cache_cleanup_thread(interval=60)
+
+# Register optimized API routes (/api/v2/*)
+register_optimized_routes(app)
+
 # App startup: load dataset and build search index lazily before first request
 @app.before_request
 def initialize_app():
     auth_paths = {"/api/login", "/api/signup", "/api/logout", "/api/auth/check", "/api/forgot-password"}
     try:
-        if request.path in auth_paths or request.path.startswith("/static"):
+        if request.path in auth_paths or request.path.startswith("/static") or request.path.startswith("/api/v2"):
             return
     except Exception:
         pass
