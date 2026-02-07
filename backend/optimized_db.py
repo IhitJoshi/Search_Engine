@@ -138,8 +138,30 @@ class OptimizedStockDB:
     
     def __init__(self, db_path: str = "stocks.db"):
         self.pool = ConnectionPool(db_path, pool_size=10)
+        self._ensure_tables()
         self._ensure_indexes()
     
+    def _ensure_tables(self):
+        """Create required tables if they don't exist"""
+        with self.pool.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS stocks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                symbol TEXT NOT NULL,
+                company_name TEXT,
+                sector TEXT,
+                price REAL,
+                volume INTEGER,
+                average_volume INTEGER,
+                market_cap REAL,
+                change_percent REAL,
+                summary TEXT,
+                last_updated TIMESTAMP
+            )
+            """)
+            conn.commit()
+
     def _ensure_indexes(self):
         """Create indexes for common queries"""
         with self.pool.get_connection() as conn:
