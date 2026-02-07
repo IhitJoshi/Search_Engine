@@ -1,14 +1,14 @@
 from flask import request, jsonify
 from app_init import app, stock_app, stock_ranker, logger
 from errors import APIError, require_auth
-from preprocessing import parse_query_filters, normalize_sector
-from response_synthesizer import response_synthesizer
+from utils.preprocessing import parse_query_filters, normalize_sector
+from core.response_synthesizer import response_synthesizer
 
 # Import optimization modules
-from cache_manager import search_cache, cache_key
-from optimized_db import optimized_db
-from optimized_processing import optimized_tokenizer, tokenize_query_cached
-from performance_utils import profile_endpoint
+from utils.cache_manager import search_cache, cache_key
+from utils.optimized_db import optimized_db
+from utils.optimized_processing import optimized_tokenizer, tokenize_query_cached
+from utils.performance_utils import profile_endpoint
 
 
 @app.route('/api/search', methods=['POST'])

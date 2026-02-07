@@ -22,8 +22,8 @@ try:
 except ImportError:
     yf = None
 
-from cache_manager import stock_cache, invalidate_stock_cache
-from optimized_db import optimized_db
+from utils.cache_manager import stock_cache, invalidate_stock_cache
+from utils.optimized_db import optimized_db
 
 logger = logging.getLogger(__name__)
 

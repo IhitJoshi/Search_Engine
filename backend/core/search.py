@@ -5,7 +5,7 @@ Enhanced BM25 search implementation with better scoring and performance
 import math
 import logging
 from typing import List, Tuple, Dict, Any
-from preprocessing import preprocess_text
+from utils.preprocessing import preprocess_text
 import pandas as pd
 
 logger = logging.getLogger(__name__)

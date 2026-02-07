@@ -1,5 +1,5 @@
 from flask import request, jsonify
-from database import get_connection, hash_password
+from utils.database import get_connection, hash_password
 from app_init import app, logger
 from errors import APIError, require_auth
 import sqlite3

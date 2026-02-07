@@ -1,15 +1,15 @@
 from flask import jsonify, request
 from app_init import app, stock_app, logger
 from errors import APIError, require_auth
-from preprocessing import normalize_sector
+from utils.preprocessing import normalize_sector
 import yfinance as yf
 import pandas as pd
 
 # Import optimization modules
-from cache_manager import stock_cache, chart_cache, cache_key
-from optimized_db import optimized_db
-from async_fetcher import fetch_chart_data_parallel
-from performance_utils import profile_endpoint
+from utils.cache_manager import stock_cache, chart_cache, cache_key
+from utils.optimized_db import optimized_db
+from services.async_fetcher import fetch_chart_data_parallel
+from utils.performance_utils import profile_endpoint
 
 
 @app.route("/api/stocks", methods=["GET"])

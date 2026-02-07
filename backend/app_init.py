@@ -3,18 +3,18 @@ from flask_cors import CORS
 import logging
 from dotenv import load_dotenv
 import threading
-from app import StockSearchApp
-from bm25_stock_ranker import create_ranker
-from stock_tokenizer import stock_tokenizer, query_tokenizer
-from database import init_db
-from preprocessing import load_dataset, tokenize_all_columns
-from search import search_engine
+from services.app import StockSearchApp
+from core.bm25_stock_ranker import create_ranker
+from utils.stock_tokenizer import stock_tokenizer, query_tokenizer
+from utils.database import init_db
+from utils.preprocessing import load_dataset, tokenize_all_columns
+from core.search import search_engine
 import os
 
 # Import optimization modules
-from cache_manager import start_cache_cleanup_thread
-from optimized_routes import register_optimized_routes
-from performance_utils import configure_logging, metrics
+from utils.cache_manager import start_cache_cleanup_thread
+from routes.optimized_routes import register_optimized_routes
+from utils.performance_utils import configure_logging, metrics
 
 load_dotenv()
 
@@ -44,6 +44,11 @@ CORS(app,
      ],
      allow_headers=["Content-Type", "Authorization"],
      methods=["GET", "POST", "PUT", "DELETE"])
+
+# Health check endpoint
+@app.route('/', methods=['GET'])
+def root_health_check():
+    return {"status": "ok", "message": "Service is running"}, 200
 
 # Initialize StockSearchApp and DB
 stock_app = StockSearchApp()

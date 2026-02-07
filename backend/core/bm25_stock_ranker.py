@@ -18,7 +18,7 @@ import math
 import logging
 from typing import List, Tuple, Dict, Any
 from collections import Counter, defaultdict
-from query_filter_engine import query_filter_engine
+from core.query_filter_engine import query_filter_engine
 
 logger = logging.getLogger(__name__)
 

@@ -17,13 +17,13 @@ from functools import wraps
 from flask import Blueprint, jsonify, request, Response, g
 from typing import Optional
 
-from cache_manager import (
+from utils.cache_manager import (
     stock_cache, chart_cache, search_cache, aggregation_cache,
     cache_key, cached
 )
-from optimized_db import optimized_db
-from async_fetcher import async_fetcher, fetch_chart_data_parallel
-from optimized_processing import optimized_tokenizer, tokenize_query_cached
+from utils.optimized_db import optimized_db
+from services.async_fetcher import async_fetcher, fetch_chart_data_parallel
+from utils.optimized_processing import optimized_tokenizer, tokenize_query_cached
 
 logger = logging.getLogger(__name__)
 
