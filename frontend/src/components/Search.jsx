@@ -17,6 +17,25 @@ const Search = ({ username, onLogout, initialQuery = "", sectorFilter = "", stoc
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const navigate = useNavigate();
   const prevPropsRef = useRef({ initialQuery: "", sectorFilter: "", stockLimit: null });
+  const normalizeResults = useCallback((results = []) => {
+    if (!Array.isArray(results)) return [];
+    return results.map((r) => {
+      if (r && r.metrics) {
+        return {
+          symbol: r.symbol,
+          company_name: r.company_name,
+          sector: r.sector,
+          price: r.metrics.price,
+          volume: r.metrics.volume,
+          change_percent: r.metrics.change_percent,
+          last_updated: r.metrics.last_updated,
+          reasons: r.reasons,
+          score: r.score,
+        };
+      }
+      return r;
+    });
+  }, []);
 
   // 🟢 Fetch stocks initially and every 10 seconds
   useEffect(() => {
@@ -95,7 +114,11 @@ const Search = ({ username, onLogout, initialQuery = "", sectorFilter = "", stoc
       if (!query && sectorFilter) {
         // If we already have live data, show it immediately
         if (allStocks.length > 0) {
-          const filtered = allStocks.filter((s) => s.sector === sectorFilter);
+          const filterNorm = (sectorFilter || "").toLowerCase().trim();
+          const filtered = allStocks.filter((s) => {
+            const sec = (s.sector || "").toLowerCase().trim();
+            return sec === filterNorm || sec.includes(filterNorm);
+          });
           const limitValue = stockLimit ?? filtered.length;
           const limited = filtered.slice(0, limitValue);
           setDisplayedStocks(limited);
@@ -130,9 +153,20 @@ const Search = ({ username, onLogout, initialQuery = "", sectorFilter = "", stoc
       const data = await response.json();
 
       if (!data.results || data.results.length === 0) {
-        // Fallback: if sector selected, try client-side from live /api/stocks
+        // Fallback: if sector selected, try client-side match from live /api/stocks
         if (sectorFilter && allStocks.length > 0) {
-          const filtered = allStocks.filter((s) => s.sector === sectorFilter);
+          const filterNorm = (sectorFilter || "").toLowerCase().trim();
+          const q = query.toLowerCase().trim();
+          const terms = q.split(/\s+/).filter(Boolean);
+          const filtered = allStocks.filter((s) => {
+            const sec = (s.sector || "").toLowerCase().trim();
+            const name = (s.company_name || "").toLowerCase();
+            const sym = (s.symbol || "").toLowerCase();
+            const inSector = sec === filterNorm || sec.includes(filterNorm);
+            if (!inSector) return false;
+            if (!terms.length) return true;
+            return terms.some((t) => name.includes(t) || sym.includes(t));
+          });
           const limitValue = stockLimit ?? filtered.length;
           const limited = filtered.slice(0, limitValue);
           if (limited.length > 0) {
@@ -151,7 +185,7 @@ const Search = ({ username, onLogout, initialQuery = "", sectorFilter = "", stoc
         }
       } else {
         // Results are already limited by backend, no need to slice again
-        setDisplayedStocks(data.results);
+        setDisplayedStocks(normalizeResults(data.results));
         setStats({
           total: data.results.length,
           time: data.time || 0,
@@ -167,7 +201,7 @@ const Search = ({ username, onLogout, initialQuery = "", sectorFilter = "", stoc
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery, sectorFilter, stockLimit, onLogout, allStocks]);
+  }, [searchQuery, sectorFilter, stockLimit, onLogout, allStocks, normalizeResults]);
 
   // Auto-search if initialQuery or sectorFilter is provided
   useEffect(() => {
@@ -219,8 +253,12 @@ const Search = ({ username, onLogout, initialQuery = "", sectorFilter = "", stoc
 
   // When navigating for a sector, populate from live stocks once available
   useEffect(() => {
-    if (sectorFilter && allStocks.length > 0) {
-      const filtered = allStocks.filter((s) => s.sector === sectorFilter);
+    if (sectorFilter && allStocks.length > 0 && !searchQuery.trim()) {
+      const filterNorm = (sectorFilter || "").toLowerCase().trim();
+      const filtered = allStocks.filter((s) => {
+        const sec = (s.sector || "").toLowerCase().trim();
+        return sec === filterNorm || sec.includes(filterNorm);
+      });
       const limitValue = stockLimit ?? filtered.length;
       const limited = filtered.slice(0, limitValue);
       if (limited.length > 0) {
@@ -229,7 +267,7 @@ const Search = ({ username, onLogout, initialQuery = "", sectorFilter = "", stoc
         setMessage({ text: "", type: "" });
       }
     }
-  }, [allStocks, sectorFilter, stockLimit]);
+  }, [allStocks, sectorFilter, stockLimit, searchQuery]);
 
   const handleLogoutClick = async () => {
     try {

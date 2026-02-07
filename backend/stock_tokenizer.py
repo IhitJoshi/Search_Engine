@@ -13,6 +13,7 @@ Example:
 """
 
 import logging
+import re
 from typing import Dict, List, Any, Optional
 import math
 
@@ -140,11 +141,11 @@ class StockTokenizer:
         
         company_name = stock_data.get('company_name', '').strip()
         if company_name:
-            # Tokenize company name into words
-            name_tokens = company_name.lower().replace(',', '').replace('.', '').split()
+            # Tokenize company name into words (split on punctuation)
+            name_tokens = re.findall(r"[a-z0-9]+", company_name.lower())
             # Filter out common words
             filtered_name_tokens = [
-                t for t in name_tokens 
+                t for t in name_tokens
                 if t not in {'inc', 'corp', 'corporation', 'company', 'co', 'ltd', 'limited', 'the'}
             ]
             tokens.extend(filtered_name_tokens)

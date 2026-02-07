@@ -1,7 +1,7 @@
 from flask import request, jsonify
 from app_init import app, stock_app, stock_ranker, logger
 from errors import APIError, require_auth
-from preprocessing import parse_query_filters
+from preprocessing import parse_query_filters, normalize_sector
 from response_synthesizer import response_synthesizer
 
 # Import optimization modules
@@ -50,10 +50,7 @@ def search():
             return jsonify(cached_result)
 
         # Use optimized database layer instead of raw queries
-        live_stocks = optimized_db.get_latest_stocks(
-            sector=sector_filter if sector_filter else None,
-            limit=None
-        )
+        live_stocks = optimized_db.get_latest_stocks(limit=None)
 
         if not live_stocks:
             return jsonify({'query': query, 'total_results': 0, 'results': [], 'message': 'No stock data available. Please wait for data to be fetched.'})
@@ -75,16 +72,20 @@ def search():
 
         # Apply sector filter if needed
         if effective_sector:
-            eff = effective_sector.lower()
+            eff_norm = normalize_sector(effective_sector)
+            eff = eff_norm.lower()
+
             def sector_match(row):
                 try:
-                    sec = (row.get('sector') or '').lower()
+                    sec_raw = (row.get('sector') or '')
+                    sec_norm = normalize_sector(sec_raw).lower()
                     sym = (row.get('symbol') or '').lower()
                     if eff == 'india' and (sym.endswith('.ns') or '.ns' in sym):
                         return True
-                    return eff in sec or eff in sym
+                    return eff in sec_norm or eff in sym
                 except Exception:
                     return False
+
             live_stocks = [s for s in live_stocks if sector_match(s)]
 
         # Apply trend filter
@@ -124,6 +125,35 @@ def search():
             return jsonify(response)
         elif query:
             ranked_results = stock_ranker.rank_live_stocks(query=query, live_stocks=live_stocks, top_k=limit)
+
+            if not ranked_results:
+                # Fallback: simple substring match on symbol/company name within filtered stocks
+                q = query.lower().strip()
+                terms = [t for t in q.split() if t]
+                def text_match(stock):
+                    name = (stock.get('company_name') or '').lower()
+                    sym = (stock.get('symbol') or '').lower()
+                    if not terms:
+                        return False
+                    return any(t in name or t in sym for t in terms)
+
+                fallback = [s for s in live_stocks if text_match(s)]
+                formatted_for_synthesizer = []
+                for stock_data in fallback[:limit]:
+                    result_dict = {**stock_data}
+                    result_dict['_score'] = 1.0
+                    result_dict['tokens'] = []
+                    formatted_for_synthesizer.append(result_dict)
+                response = response_synthesizer.synthesize_response(
+                    query=query,
+                    ranked_results=formatted_for_synthesizer,
+                    ranking_method='substring_fallback',
+                    metadata={'sector_filter': effective_sector} if effective_sector else None
+                )
+                response['cached'] = False
+                search_cache.set(search_key, response, ttl=60)
+                return jsonify(response)
+
             formatted_for_synthesizer = []
             for symbol, score, stock_data in ranked_results:
                 result_dict = {**stock_data}
@@ -196,16 +226,20 @@ def ai_search():
         if (is_all_stocks_query or is_trend_only_query) and not effective_sector:
             effective_sector = ''
         if effective_sector:
-            eff = effective_sector.lower()
+            eff_norm = normalize_sector(effective_sector)
+            eff = eff_norm.lower()
+
             def sector_match(row):
                 try:
-                    sec = (row.get('sector') or '').lower()
+                    sec_raw = (row.get('sector') or '')
+                    sec_norm = normalize_sector(sec_raw).lower()
                     sym = (row.get('symbol') or '').lower()
                     if eff == 'india' and (sym.endswith('.ns') or '.ns' in sym):
                         return True
-                    return eff in sec or eff in sym
+                    return eff in sec_norm or eff in sym
                 except Exception:
                     return False
+
             live_stocks = [s for s in live_stocks if sector_match(s)]
         if trend_to_apply:
             def get_change_value(s):

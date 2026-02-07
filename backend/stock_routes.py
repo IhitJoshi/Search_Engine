@@ -1,6 +1,7 @@
 from flask import jsonify, request
 from app_init import app, stock_app, logger
 from errors import APIError, require_auth
+from preprocessing import normalize_sector
 import yfinance as yf
 import pandas as pd
 
@@ -37,7 +38,24 @@ def get_stocks():
         return jsonify(cached)
     
     # Use optimized database layer
-    stocks = optimized_db.get_latest_stocks(sector=sector, limit=limit)
+    stocks = optimized_db.get_latest_stocks(limit=limit)
+
+    # Apply sector filter locally for case-insensitive / normalized matching
+    if sector:
+        eff_norm = normalize_sector(sector).lower()
+
+        def sector_match(row):
+            try:
+                sec_raw = (row.get('sector') or '')
+                sec_norm = normalize_sector(sec_raw).lower()
+                sym = (row.get('symbol') or '').lower()
+                if eff_norm == 'india' and (sym.endswith('.ns') or '.ns' in sym):
+                    return True
+                return eff_norm in sec_norm or eff_norm in sym
+            except Exception:
+                return False
+
+        stocks = [s for s in stocks if sector_match(s)]
     
     # Cache the result
     stock_cache.set(cache_key_val, stocks, ttl=60)
