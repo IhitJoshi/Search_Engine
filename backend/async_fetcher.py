@@ -306,22 +306,15 @@ def fetch_chart_data_parallel(
     if periods is None:
         periods = ['1D', '5D', '1M', '3M', '1Y']
     
-    # Normalize periods
-    periods = [p.upper() for p in periods]
-    
-    # Try per-period cache first (matches stock_routes keys)
-    results = {}
-    for p in periods:
-        cached_period = chart_cache.get(f"chart:{symbol}:{p}")
-        if cached_period:
-            results[p] = cached_period
+    cache_key = f"chart:{symbol}:all"
+    cached = chart_cache.get(cache_key)
+    if cached:
+        return cached
     
     if yf is None:
         return {}
     
-    missing = [p for p in periods if p not in results]
-    if not missing:
-        return results
+    results = {}
     
     # Define period configurations
     period_config = {
@@ -360,16 +353,15 @@ def fetch_chart_data_parallel(
             logger.error(f"Error fetching {period} chart for {symbol}: {e}")
             return period, None
     
-    # Parallel fetch missing periods
+    # Parallel fetch all periods
     with ThreadPoolExecutor(max_workers=5) as executor:
-        futures = {executor.submit(fetch_period, p): p for p in missing}
+        futures = {executor.submit(fetch_period, p): p for p in periods}
         for future in as_completed(futures):
             period, data = future.result()
             if data:
                 results[period] = data
     
-    # Cache per-period results for future calls
-    for period, data in results.items():
-        chart_cache.set(f"chart:{symbol}:{period}", data, ttl=300)
+    # Cache combined result
+    chart_cache.set(cache_key, results, ttl=300)
     
     return results
