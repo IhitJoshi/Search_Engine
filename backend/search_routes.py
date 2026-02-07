@@ -31,7 +31,10 @@ def search():
 
         query = data.get('query', '').strip()
         sector_filter = data.get('sector', '').strip()
-        limit = data.get('limit', 50)
+        try:
+            limit = int(data.get('limit', 50))
+        except Exception:
+            limit = 50
 
         if query and len(query) > 500:
             raise APIError("Query too long")
@@ -49,7 +52,7 @@ def search():
         # Use optimized database layer instead of raw queries
         live_stocks = optimized_db.get_latest_stocks(
             sector=sector_filter if sector_filter else None,
-            limit=200
+            limit=None
         )
 
         if not live_stocks:
@@ -162,7 +165,10 @@ def ai_search():
         if not data:
             return jsonify({"error": "No JSON data provided"}), 400
         query = data.get("query", "").strip()
-        limit = data.get("limit", 50)
+        try:
+            limit = int(data.get("limit", 50))
+        except Exception:
+            limit = 50
         if not query:
             return jsonify({"error": "Empty query"}), 400
         if len(query) > 500:
@@ -176,7 +182,7 @@ def ai_search():
             return jsonify(cached_result)
 
         # Use optimized database layer
-        live_stocks = optimized_db.get_latest_stocks(limit=200)
+        live_stocks = optimized_db.get_latest_stocks(limit=None)
 
         if not live_stocks:
             return jsonify({"query": query, "summary": "No stock data available. Please wait for data to be fetched.", "results": []})

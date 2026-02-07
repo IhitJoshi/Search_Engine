@@ -24,14 +24,20 @@ def get_stocks():
     """
     # Check cache first
     sector = request.args.get('sector')
-    cache_key_val = f"stocks_list:{sector or 'all'}"
+    limit_arg = request.args.get('limit')
+    try:
+        limit = int(limit_arg) if limit_arg is not None else None
+    except Exception:
+        limit = None
+
+    cache_key_val = f"stocks_list:{sector or 'all'}:{limit if limit is not None else 'all'}"
     
     cached = stock_cache.get(cache_key_val)
     if cached:
         return jsonify(cached)
     
     # Use optimized database layer
-    stocks = optimized_db.get_latest_stocks(sector=sector, limit=100)
+    stocks = optimized_db.get_latest_stocks(sector=sector, limit=limit)
     
     # Cache the result
     stock_cache.set(cache_key_val, stocks, ttl=60)

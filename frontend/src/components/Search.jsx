@@ -78,7 +78,8 @@ const Search = ({ username, onLogout, initialQuery = "", sectorFilter = "", stoc
 
       if (containsAllKeyword && !containsSectorHint && !sectorFilter) {
         if (allStocks.length > 0) {
-          const limited = allStocks.slice(0, stockLimit || 50);
+          const limitValue = stockLimit ?? allStocks.length;
+          const limited = limitValue ? allStocks.slice(0, limitValue) : allStocks;
           setDisplayedStocks(limited);
           setStats({ total: limited.length, time: 0, query: "all stocks" });
           setMessage({ text: "Showing live results", type: "success" });
@@ -94,9 +95,9 @@ const Search = ({ username, onLogout, initialQuery = "", sectorFilter = "", stoc
       if (!query && sectorFilter) {
         // If we already have live data, show it immediately
         if (allStocks.length > 0) {
-          const limited = allStocks
-            .filter((s) => s.sector === sectorFilter)
-            .slice(0, stockLimit || 10);
+          const filtered = allStocks.filter((s) => s.sector === sectorFilter);
+          const limitValue = stockLimit ?? filtered.length;
+          const limited = filtered.slice(0, limitValue);
           setDisplayedStocks(limited);
           setStats({ total: limited.length, time: 0, query: sectorFilter });
           setMessage({ text: "", type: "" });
@@ -131,9 +132,9 @@ const Search = ({ username, onLogout, initialQuery = "", sectorFilter = "", stoc
       if (!data.results || data.results.length === 0) {
         // Fallback: if sector selected, try client-side from live /api/stocks
         if (sectorFilter && allStocks.length > 0) {
-          const limited = allStocks
-            .filter((s) => s.sector === sectorFilter)
-            .slice(0, stockLimit || 10);
+          const filtered = allStocks.filter((s) => s.sector === sectorFilter);
+          const limitValue = stockLimit ?? filtered.length;
+          const limited = filtered.slice(0, limitValue);
           if (limited.length > 0) {
             setDisplayedStocks(limited);
             setStats({ total: limited.length, time: 0, query: sectorFilter });
@@ -194,9 +195,10 @@ const Search = ({ username, onLogout, initialQuery = "", sectorFilter = "", stoc
         setDisplayedStocks([]);
         setStats({ total: 0, time: 0, query: sectorFilter });
         setMessage({ text: "Loading sector data…", type: "info" });
-      } else if (!initialQuery && !sectorFilter && stockLimit && allStocks.length > 0) {
-        // "All Stocks" - show limited stocks from cached data
-        const limited = allStocks.slice(0, stockLimit);
+      } else if (!initialQuery && !sectorFilter && allStocks.length > 0) {
+        // "All Stocks" - show cached data
+        const limitValue = stockLimit ?? allStocks.length;
+        const limited = allStocks.slice(0, limitValue);
         setDisplayedStocks(limited);
         setStats({ total: limited.length, time: 0, query: "Showing all stocks" });
       }
@@ -207,8 +209,9 @@ const Search = ({ username, onLogout, initialQuery = "", sectorFilter = "", stoc
 
   // When navigating for "All Stocks", update list after allStocks arrives
   useEffect(() => {
-    if (!initialQuery && !sectorFilter && stockLimit && allStocks.length > 0) {
-      const limited = allStocks.slice(0, stockLimit);
+    if (!initialQuery && !sectorFilter && allStocks.length > 0) {
+      const limitValue = stockLimit ?? allStocks.length;
+      const limited = allStocks.slice(0, limitValue);
       setDisplayedStocks(limited);
       setStats({ total: limited.length, time: 0, query: "Showing all stocks" });
     }
@@ -217,9 +220,9 @@ const Search = ({ username, onLogout, initialQuery = "", sectorFilter = "", stoc
   // When navigating for a sector, populate from live stocks once available
   useEffect(() => {
     if (sectorFilter && allStocks.length > 0) {
-      const limited = allStocks
-        .filter((s) => s.sector === sectorFilter)
-        .slice(0, stockLimit || 10);
+      const filtered = allStocks.filter((s) => s.sector === sectorFilter);
+      const limitValue = stockLimit ?? filtered.length;
+      const limited = filtered.slice(0, limitValue);
       if (limited.length > 0) {
         setDisplayedStocks(limited);
         setStats({ total: limited.length, time: 0, query: sectorFilter });

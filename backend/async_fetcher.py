@@ -303,13 +303,15 @@ def fetch_chart_data_parallel(
     """
     from cache_manager import chart_cache
     
+    use_all_cache = periods is None
     if periods is None:
         periods = ['1D', '5D', '1M', '3M', '1Y']
     
-    cache_key = f"chart:{symbol}:all"
-    cached = chart_cache.get(cache_key)
-    if cached:
-        return cached
+    if use_all_cache:
+        cache_key = f"chart:{symbol}:all"
+        cached = chart_cache.get(cache_key)
+        if cached:
+            return cached
     
     if yf is None:
         return {}
@@ -361,7 +363,8 @@ def fetch_chart_data_parallel(
             if data:
                 results[period] = data
     
-    # Cache combined result
-    chart_cache.set(cache_key, results, ttl=300)
+    # Cache combined result only when fetching all periods
+    if use_all_cache:
+        chart_cache.set(cache_key, results, ttl=300)
     
     return results

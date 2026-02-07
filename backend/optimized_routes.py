@@ -284,7 +284,7 @@ def search_optimized():
         return jsonify(cached_result)
     
     # Get stocks from optimized DB
-    stocks = optimized_db.get_latest_stocks(sector=sector or None, limit=200)
+    stocks = optimized_db.get_latest_stocks(sector=sector or None, limit=None)
     
     if not stocks:
         return jsonify({

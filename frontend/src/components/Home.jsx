@@ -11,19 +11,19 @@ const Home = ({ username, onLogout, onNavigateToSearch }) => {
 
   // Categories for the boxes - matching actual database sectors
   const categories = [
-    { name: "Technology", icon: "🚀", filter: "Technology", limit: 10, color: "from-cyan-500 to-blue-600" },
-    { name: "Finance", icon: "📊", filter: "Financial Services", limit: 10, color: "from-emerald-500 to-green-600" },
-    { name: "Energy", icon: "⚡", filter: "Energy", limit: 10, color: "from-amber-500 to-orange-600" },
-    { name: "Healthcare", icon: "🏥", filter: "Healthcare", limit: 10, color: "from-rose-500 to-pink-600" },
-    { name: "Automotive", icon: "🚗", filter: "Automotive", limit: 10, color: "from-violet-500 to-purple-600" },
-    { name: "All Stocks", icon: "📈", filter: "", limit: 50, color: "from-indigo-500 to-purple-600" },
+    { name: "Technology", icon: "🚀", filter: "Technology", limit: null, color: "from-cyan-500 to-blue-600" },
+    { name: "Finance", icon: "📊", filter: "Financial Services", limit: null, color: "from-emerald-500 to-green-600" },
+    { name: "Energy", icon: "⚡", filter: "Energy", limit: null, color: "from-amber-500 to-orange-600" },
+    { name: "Healthcare", icon: "🏥", filter: "Healthcare", limit: null, color: "from-rose-500 to-pink-600" },
+    { name: "Automotive", icon: "🚗", filter: "Automotive", limit: null, color: "from-violet-500 to-purple-600" },
+    { name: "All Stocks", icon: "📈", filter: "", limit: null, color: "from-indigo-500 to-purple-600" },
   ];
 
   // Fetch stocks for ticker
   useEffect(() => {
     const fetchStocks = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/stocks");
+        const res = await fetch("http://localhost:5000/api/stocks?limit=50");
         const data = await res.json();
         setStocks(data);
       } catch (err) {
@@ -45,9 +45,9 @@ const Home = ({ username, onLogout, onNavigateToSearch }) => {
 
   const handleCategoryClick = (category) => {
     if (category.filter === "") {
-      onNavigateToSearch("", category.limit || 50);
+      onNavigateToSearch("", category.limit);
     } else {
-      onNavigateToSearch(category.filter, category.limit || 10);
+      onNavigateToSearch(category.filter, category.limit);
     }
   };
 
@@ -250,7 +250,11 @@ const Home = ({ username, onLogout, onNavigateToSearch }) => {
                         {category.name}
                       </h3>
                       <p className="text-sm text-gray-400">
-                        {category.name === "All Stocks" ? "Complete market overview" : `${category.limit}+ companies`}
+                        {category.name === "All Stocks"
+                          ? "Complete market overview"
+                          : category.limit
+                          ? `${category.limit}+ companies`
+                          : "All companies"}
                       </p>
                     </div>
                   </div>
