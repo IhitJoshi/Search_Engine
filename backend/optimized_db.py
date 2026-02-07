@@ -170,7 +170,7 @@ class OptimizedStockDB:
     def get_latest_stocks(
         self,
         sector: Optional[str] = None,
-        limit: int = 100
+        limit: Optional[int] = 100
     ) -> List[Dict[str, Any]]:
         """
         Get latest snapshot of each stock.
@@ -183,30 +183,55 @@ class OptimizedStockDB:
             
             if sector:
                 # Optimized query with sector filter in subquery
-                cursor.execute('''
-                    SELECT s.* FROM stocks s
-                    INNER JOIN (
-                        SELECT symbol, MAX(last_updated) as max_updated
-                        FROM stocks
-                        WHERE sector = ?
-                        GROUP BY symbol
-                    ) latest ON s.symbol = latest.symbol 
-                           AND s.last_updated = latest.max_updated
-                    ORDER BY s.symbol
-                    LIMIT ?
-                ''', (sector, limit))
+                if limit is None:
+                    cursor.execute('''
+                        SELECT s.* FROM stocks s
+                        INNER JOIN (
+                            SELECT symbol, MAX(last_updated) as max_updated
+                            FROM stocks
+                            WHERE sector = ?
+                            GROUP BY symbol
+                        ) latest ON s.symbol = latest.symbol 
+                               AND s.last_updated = latest.max_updated
+                        ORDER BY s.symbol
+                    ''', (sector,))
+                else:
+                    cursor.execute('''
+                        SELECT s.* FROM stocks s
+                        INNER JOIN (
+                            SELECT symbol, MAX(last_updated) as max_updated
+                            FROM stocks
+                            WHERE sector = ?
+                            GROUP BY symbol
+                        ) latest ON s.symbol = latest.symbol 
+                               AND s.last_updated = latest.max_updated
+                        ORDER BY s.symbol
+                        LIMIT ?
+                    ''', (sector, limit))
             else:
-                cursor.execute('''
-                    SELECT s.* FROM stocks s
-                    INNER JOIN (
-                        SELECT symbol, MAX(last_updated) as max_updated
-                        FROM stocks
-                        GROUP BY symbol
-                    ) latest ON s.symbol = latest.symbol 
-                           AND s.last_updated = latest.max_updated
-                    ORDER BY s.symbol
-                    LIMIT ?
-                ''', (limit,))
+                if limit is None:
+                    cursor.execute('''
+                        SELECT s.* FROM stocks s
+                        INNER JOIN (
+                            SELECT symbol, MAX(last_updated) as max_updated
+                            FROM stocks
+                            GROUP BY symbol
+                        ) latest ON s.symbol = latest.symbol 
+                               AND s.last_updated = latest.max_updated
+                        ORDER BY s.symbol
+                    ''')
+                else:
+                    cursor.execute('''
+                        SELECT s.* FROM stocks s
+                        INNER JOIN (
+                            SELECT symbol, MAX(last_updated) as max_updated
+                            FROM stocks
+                            GROUP BY symbol
+                        ) latest ON s.symbol = latest.symbol 
+                               AND s.last_updated = latest.max_updated
+                        ORDER BY s.symbol
+                        LIMIT ?
+                    ''', (limit,))
             
             return [dict(row) for row in cursor.fetchall()]
     

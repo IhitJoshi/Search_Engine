@@ -1,4 +1,5 @@
 from flask import request, jsonify
+import re
 from app_init import app, stock_app, stock_ranker, logger
 from errors import APIError, require_auth
 from preprocessing import parse_query_filters
@@ -175,12 +176,6 @@ def ai_search():
             cached_result['cached'] = True
             return jsonify(cached_result)
 
-        # Use optimized database layer
-        live_stocks = optimized_db.get_latest_stocks(limit=200)
-
-        if not live_stocks:
-            return jsonify({"query": query, "summary": "No stock data available. Please wait for data to be fetched.", "results": []})
-
         # apply implicit filters
         parsed_filters = parse_query_filters(query)
         effective_sector = parsed_filters.get('sector', '')
@@ -189,18 +184,45 @@ def ai_search():
         is_trend_only_query = bool(trend_to_apply) and not effective_sector
         if (is_all_stocks_query or is_trend_only_query) and not effective_sector:
             effective_sector = ''
+
+        def _is_sector_only_query(q: str, sector_name: str, trend: str) -> bool:
+            if not q or not sector_name or trend:
+                return False
+            tokens = re.findall(r"[a-z]+", q.lower())
+            if not tokens:
+                return False
+            generic = {
+                "stocks", "stock", "companies", "company", "shares",
+                "sector", "industry", "market", "markets"
+            }
+            sector_terms = set(sector_name.lower().replace("&", " ").replace("-", " ").split())
+            sector_terms.add(sector_name.lower())
+            known_sector_keywords = {
+                "tech", "technology", "software", "semiconductor", "it",
+                "finance", "financial", "bank", "banking", "investment",
+                "health", "healthcare", "pharma", "pharmaceutical", "biotech",
+                "energy", "oil", "gas", "power", "utilities",
+                "auto", "automotive", "car", "vehicle",
+                "retail", "consumer", "industrial", "manufacturing",
+                "telecom", "communication", "wireless", "mobile",
+                "realty", "estate", "property",
+                "metal", "metals", "mining", "steel",
+                "chemical", "chemicals",
+                "infrastructure", "infra", "logistics",
+                "india", "nse", "bse"
+            }
+            return all(t in generic or t in sector_terms or t in known_sector_keywords for t in tokens)
+
+        sector_only_query = _is_sector_only_query(query, effective_sector, trend_to_apply)
+
+        # Use optimized database layer
         if effective_sector:
-            eff = effective_sector.lower()
-            def sector_match(row):
-                try:
-                    sec = (row.get('sector') or '').lower()
-                    sym = (row.get('symbol') or '').lower()
-                    if eff == 'india' and (sym.endswith('.ns') or '.ns' in sym):
-                        return True
-                    return eff in sec or eff in sym
-                except Exception:
-                    return False
-            live_stocks = [s for s in live_stocks if sector_match(s)]
+            live_stocks = optimized_db.get_latest_stocks(sector=effective_sector, limit=None)
+        else:
+            live_stocks = optimized_db.get_latest_stocks(limit=200)
+
+        if not live_stocks:
+            return jsonify({"query": query, "summary": "No stock data available. Please wait for data to be fetched.", "results": []})
         if trend_to_apply:
             def get_change_value(s):
                 for k in ('change_percent', 'change', 'price_change', 'chg'):
@@ -222,9 +244,10 @@ def ai_search():
             elif trend_to_apply == 'down':
                 live_stocks = [s for s in live_stocks if (get_change_value(s) or 0) < 0]
 
-        if is_all_stocks_query or is_trend_only_query:
+        if is_all_stocks_query or is_trend_only_query or sector_only_query:
             results = []
-            for idx, item in enumerate(live_stocks[:limit], start=1):
+            items = live_stocks if sector_only_query else live_stocks[:limit]
+            for idx, item in enumerate(items, start=1):
                 results.append({
                     "symbol": item.get('symbol'),
                     "name": item.get('company_name', item.get('symbol')),
@@ -239,7 +262,7 @@ def ai_search():
             summary = f"Found {len(results)} stocks for '{query}'."
             return jsonify({"query": query, "summary": summary, "results": results, "timestamp": __import__('datetime').datetime.now().isoformat() + 'Z'})
 
-        ranked_results = stock_ranker.rank_live_stocks(query=query, live_stocks=live_stocks, top_k=12)
+        ranked_results = stock_ranker.rank_live_stocks(query=query, live_stocks=live_stocks, top_k=limit)
         if not ranked_results:
             return jsonify({"query": query, "summary": f"No matching stocks found for '{query}'.", "results": []})
 
