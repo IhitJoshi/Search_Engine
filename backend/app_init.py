@@ -60,15 +60,10 @@ stock_ranker = create_ranker(
 def run_background_fetcher():
     all_stocks = [
         "AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA", "AVGO", "TSM", "TCEHY",
-        "ASML", "ORCL", "NFLX", "ADBE", "CRM", "INTC", "AMD", "QCOM", "CSCO", "SAP",
         "JPM", "BAC", "V", "MA", "PYPL", "SQ", "GS", "MS", "AXP", "INTU",
-        "WFC", "C", "BK", "USB", "SCHW", "BLK", "PNC", "TFC", "COF", "CME",
         "NEE", "ENPH", "FSLR", "VWS.CO", "ORSTED.CO", "XOM", "CVX", "BP", "TTE", "SHEL",
-        "COP", "SLB", "EOG", "PSX", "MPC", "VLO", "OKE", "KMI", "HAL", "ENB",
         "JNJ", "PFE", "MRK", "NVS", "RHHBY", "AMGN", "GILD", "BIIB", "REGN", "MRNA",
-        "UNH", "ABBV", "LLY", "BMY", "AZN", "SNY", "ISRG", "MDT", "VRTX", "ZTS",
-        "NIO", "RIVN", "LCID", "BYDDY", "TM", "HMC", "GM", "F", "STLA", "VWAGY",
-        "PCAR", "MGA", "LEA", "BWA", "APTV", "BMWYY", "POAHY", "RACE", "TTM", "NSANY"
+        "NIO", "RIVN", "LCID", "BYD", "TM", "HMC", "GM", "F", "STLA", "VWAGY"
     ]
     try:
         stock_app.stock_fetcher.run_continuous_fetch(all_stocks, 60)
