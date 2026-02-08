@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../config/api";
 import StockCard from "./StockCard";
 import StockDetails from "./StockDetails";
 
@@ -44,8 +45,8 @@ const Search = ({ username, onLogout, initialQuery = "", sectorFilter = "", stoc
     const fetchStocks = async () => {
       try {
         setIsLiveLoading(true);
-        const res = await fetch("http://localhost:5000/api/stocks");
-        const data = await res.json();
+        const res = await api.get("/api/stocks");
+        const data = res.data;
 
         // Detect price changes for animation
         const updated = data.map((stock) => {
@@ -138,19 +139,14 @@ const Search = ({ username, onLogout, initialQuery = "", sectorFilter = "", stoc
         requestBody.sector = sectorFilter;
       }
 
-      const response = await fetch("http://localhost:5000/api/search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(requestBody),
-      });
+      const response = await api.post("/api/search", requestBody);
 
       if (response.status === 401) {
         onLogout();
         return;
       }
 
-      const data = await response.json();
+      const data = response.data;
 
       if (!data.results || data.results.length === 0) {
         // Fallback: if sector selected, try client-side match from live /api/stocks
@@ -271,10 +267,7 @@ const Search = ({ username, onLogout, initialQuery = "", sectorFilter = "", stoc
 
   const handleLogoutClick = async () => {
     try {
-      await fetch("http://localhost:5000/api/logout", {
-        method: "POST",
-        credentials: "include",
-      });
+      await api.post("/api/logout");
     } catch (error) {
       console.error("Logout error:", error);
     } finally {

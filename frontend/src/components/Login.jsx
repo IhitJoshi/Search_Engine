@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../config/api';
 
 const Login = ({ onLoginSuccess, onNavigateToSignup }) => {
   const [formData, setFormData] = useState({
@@ -33,21 +34,14 @@ const Login = ({ onLoginSuccess, onNavigateToSignup }) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ 
-          username: username.trim(), 
-          password: password.trim() 
-        })
+      const response = await api.post("/api/login", { 
+        username: username.trim(), 
+        password: password.trim() 
       });
 
-      const data = await response.json();
+      const data = response.data;
 
-      if (response.ok) {
+      if (response.status === 200) {
         if (rememberMe) {
           localStorage.setItem('rememberedUsername', username);
         } else {
@@ -64,7 +58,8 @@ const Login = ({ onLoginSuccess, onNavigateToSignup }) => {
       }
     } catch (error) {
       console.error("Login error:", error);
-      setMessage({ text: 'Cannot connect to server. Make sure Flask is running on port 5000.', type: 'error' });
+      const errorMsg = error.response?.data?.error || 'Cannot connect to server. Please try again later.';
+      setMessage({ text: errorMsg, type: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -90,16 +85,7 @@ const Login = ({ onLoginSuccess, onNavigateToSignup }) => {
     setResetMessage({ text: '', type: '' });
 
     try {
-      const response = await fetch("http://localhost:5000/api/forgot-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email: resetEmail.trim() })
-      });
-      // Try to parse JSON (may fail on unexpected responses)
-      let data = null;
-      try { data = await response.json(); } catch {}
+      await api.post("/api/forgot-password", { email: resetEmail.trim() });
 
       // Optimistic UX: Treat non-200 as success in development to avoid blocking users
       setResetMessage({ 

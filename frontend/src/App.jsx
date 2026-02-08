@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import api from "./config/api";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
 import Home from "./components/Home";
@@ -22,13 +23,10 @@ const AppContent = () => {
 
   const checkAuth = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/auth/check", {
-        method: "GET",
-        credentials: "include",
-      });
+      const response = await api.get("/api/auth/check");
 
-      if (response.ok) {
-        const data = await response.json();
+      if (response.status === 200) {
+        const data = response.data;
         if (data.logged_in) {
           setUsername(data.username);
           setIsAuthenticated(true);

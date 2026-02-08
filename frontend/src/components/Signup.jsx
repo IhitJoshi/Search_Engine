@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import api from '../config/api';
 
 const Signup = ({ onSignupSuccess, onNavigateToLogin }) => {
   const [formData, setFormData] = useState({
@@ -33,22 +34,15 @@ const Signup = ({ onSignupSuccess, onNavigateToLogin }) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ 
-          username: username.trim(), 
-          email: email.trim(),
-          password: password.trim() 
-        })
+      const response = await api.post("/api/signup", { 
+        username: username.trim(), 
+        email: email.trim(),
+        password: password.trim() 
       });
 
-      const data = await response.json();
+      const data = response.data;
 
-      if (response.ok) {
+      if (response.status === 200 || response.status === 201) {
         setMessage({ text: 'Account created successfully! Please login.', type: 'success' });
         setTimeout(() => {
           onSignupSuccess();
@@ -58,7 +52,8 @@ const Signup = ({ onSignupSuccess, onNavigateToLogin }) => {
       }
     } catch (error) {
       console.error("Signup error:", error);
-      setMessage({ text: 'Cannot connect to server.', type: 'error' });
+      const errorMsg = error.response?.data?.error || 'Cannot connect to server. Please try again later.';
+      setMessage({ text: errorMsg, type: 'error' });
     } finally {
       setIsLoading(false);
     }

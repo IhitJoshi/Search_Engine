@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../config/api";
 import QuerySearch from "./QuerySearch";
 
 const Home = ({ username, onLogout, onNavigateToSearch }) => {
@@ -23,9 +24,8 @@ const Home = ({ username, onLogout, onNavigateToSearch }) => {
   useEffect(() => {
     const fetchStocks = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/stocks?limit=50");
-        const data = await res.json();
-        setStocks(data);
+        const res = await api.get("/api/stocks", { params: { limit: 50 } });
+        setStocks(res.data);
       } catch (err) {
         console.error("Error fetching stocks:", err);
       }
@@ -53,10 +53,7 @@ const Home = ({ username, onLogout, onNavigateToSearch }) => {
 
   const handleLogoutClick = async () => {
     try {
-      await fetch("http://localhost:5000/api/logout", {
-        method: "POST",
-        credentials: "include",
-      });
+      await api.post("/api/logout");
     } catch (error) {
       console.error("Logout error:", error);
     } finally {

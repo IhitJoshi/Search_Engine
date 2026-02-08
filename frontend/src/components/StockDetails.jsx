@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Chart, LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Tooltip, Filler } from "chart.js";
+import api from "../config/api";
 
 Chart.register(LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Tooltip, Filler);
 
@@ -16,8 +17,8 @@ const StockDetails = ({ symbol, onClose }) => {
   useEffect(() => {
     const fetchDetails = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/stocks/${symbol}`);
-        const data = await res.json();
+        const res = await api.get(`/api/stocks/${symbol}`);
+        const data = res.data;
         if (data.error) console.error("Error fetching stock details:", data.error);
         else setDetails(data.details);
       } catch (err) {
@@ -38,8 +39,8 @@ const StockDetails = ({ symbol, onClose }) => {
     const fetchChartData = async () => {
       setChartLoading(true);
       try {
-        const res = await fetch(`http://localhost:5000/api/stocks/${symbol}?range=${range}`);
-        const data = await res.json();
+        const res = await api.get(`/api/stocks/${symbol}`, { params: { range } });
+        const data = res.data;
         if (data.chart) setChartData(data.chart);
       } catch (err) {
         console.error("Chart fetch error:", err);

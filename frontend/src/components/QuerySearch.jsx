@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+import api from "../config/api";
 import StockCard from "./StockCard";
 import StockDetails from "./StockDetails"; // 👈 import your detailed modal
 
@@ -12,7 +12,7 @@ const QuerySearch = () => {
   const handleSearch = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("http://127.0.0.1:5000/api/ai_search", {
+      const res = await api.post("/api/ai_search", {
         query: searchQuery,
       });
       if (res.data.results && res.data.results.length > 0) {

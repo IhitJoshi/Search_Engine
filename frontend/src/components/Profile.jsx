@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../config/api";
 
 const menuItems = [
   { key: "overview", label: "Overview" },
@@ -18,12 +19,9 @@ const Profile = ({ username = "User", onLogout }) => {
   // Fix: Proper logout function
   const handleLogout = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/logout", {
-        method: "POST",
-        credentials: "include",
-      });
+      const response = await api.post("/api/logout");
       
-      if (response.ok) {
+      if (response.status === 200) {
         console.log("Profile logout successful");
       } else {
         console.error("Profile logout failed:", response.status);
@@ -43,11 +41,8 @@ const Profile = ({ username = "User", onLogout }) => {
   useEffect(() => {
     const fetchAuth = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/auth/check", {
-          credentials: "include",
-        });
-        const data = await res.json();
-        setAuth(data);
+        const res = await api.get("/api/auth/check");
+        setAuth(res.data);
       } catch (e) {
         setError("Failed to load profile info");
       } finally {
@@ -57,9 +52,8 @@ const Profile = ({ username = "User", onLogout }) => {
 
     const fetchStocks = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/stocks");
-        const data = await res.json();
-        setStocks(Array.isArray(data) ? data : []);
+        const res = await api.get("/api/stocks");
+        setStocks(Array.isArray(res.data) ? res.data : []);
       } catch (e) {
         setError((prev) => prev || "Failed to load stock stats");
       } finally {
@@ -305,9 +299,8 @@ const Profile = ({ username = "User", onLogout }) => {
                         onClick={async () => {
                           setLoading((s) => ({ ...s, stocks: true }));
                           try {
-                            const res = await fetch("http://localhost:5000/api/stocks");
-                            const data = await res.json();
-                            setStocks(Array.isArray(data) ? data : []);
+                            const res = await api.get("/api/stocks");
+                            setStocks(Array.isArray(res.data) ? res.data : []);
                           } finally {
                             setLoading((s) => ({ ...s, stocks: false }));
                           }
@@ -440,15 +433,10 @@ function AccountPanel({ auth, username, onLogout }) {
 
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/auth/update-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email: newEmail }),
-      });
-      const data = await res.json();
+      const res = await api.post("/api/auth/update-email", { email: newEmail });
+      const data = res.data;
 
-      if (res.ok) {
+      if (res.status === 200) {
         setMessage("Email updated successfully");
         auth.email = newEmail;
         setIsEditingEmail(false);
@@ -658,18 +646,13 @@ function SecurityPanel({ auth, username, onLogout }) {
 
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/auth/change-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          current_password: passwords.current,
-          new_password: passwords.new,
-        }),
+      const res = await api.post("/api/auth/change-password", {
+        current_password: passwords.current,
+        new_password: passwords.new,
       });
-      const data = await res.json();
+      const data = res.data;
 
-      if (res.ok) {
+      if (res.status === 200) {
         setMessage("Password changed successfully");
         setPasswords({ current: "", new: "", confirm: "" });
         setShowPasswordForm(false);
