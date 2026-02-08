@@ -11,3 +11,5 @@ pandas>=2.0.0,<3.0.0
 
 # Natural Language Processing (NLP)
 spacy>=3.7.0,<4.0.0
+
+gunicorn
