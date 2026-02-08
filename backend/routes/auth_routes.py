@@ -131,7 +131,6 @@ def forgot_password():
 
 
 @app.route("/api/auth/check", methods=["GET"])
-@require_auth()
 def check_auth():
     """Check if user is authenticated and return user info"""
     try:
@@ -139,11 +138,18 @@ def check_auth():
         username = session.get('username')
         email = session.get('email')
 
-        return jsonify({
-            'logged_in': True,
-            'username': username,
-            'email': email
-        })
+        if username:
+            return jsonify({
+                'logged_in': True,
+                'username': username,
+                'email': email
+            }), 200
+        else:
+            return jsonify({
+                'logged_in': False,
+                'username': None,
+                'email': None
+            }), 200
 
     except APIError:
         raise
