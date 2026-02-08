@@ -29,21 +29,36 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey_change_in_production")
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+app.config['SESSION_COOKIE_SECURE'] = True  # Required for cross-origin cookies
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'  # Required for cross-origin cookies
 
-# CORS configuration
-CORS(app,
-     supports_credentials=True,
-     origins=[
-         "http://localhost:5173",
-         "http://127.0.0.1:5173",
-         "http://localhost:5174",
-         "http://127.0.0.1:5174",
-         "http://localhost:5175",
-         "http://127.0.0.1:5175"
-     ],
-     allow_headers=["Content-Type", "Authorization"],
-     methods=["GET", "POST", "PUT", "DELETE"])
+# CORS configuration - Production origins
+CORS(
+    app,
+    resources={r"/api/*": {
+        "origins": [
+            "https://stock-engine.vercel.app",
+            "https://stock-engine-git-main-ihit-joshis-projects.vercel.app",
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "http://localhost:5175"
+        ]
+    }},
+    supports_credentials=True
+)
+
+
+@app.after_request
+def after_request(response):
+    response.headers.add(
+        "Access-Control-Allow-Headers",
+        "Content-Type,Authorization"
+    )
+    response.headers.add(
+        "Access-Control-Allow-Methods",
+        "GET,POST,PUT,DELETE,OPTIONS"
+    )
+    return response
 
 # Health check endpoint
 @app.route('/', methods=['GET'])
