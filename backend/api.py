@@ -1,10 +1,7 @@
-import os
-from app_init import app, logger
+from flask import Flask
 
-# # Import modules to register their routes and handlers
-# import errors      # registers error handlers
-# from routes import auth_routes
-# from routes import search_routes
-# from routes import stock_routes
+app = Flask(__name__)
 
-from app_init import app
+@app.route("/")
+def health():
+    return {"status": "ok", "message": "boot test"}
