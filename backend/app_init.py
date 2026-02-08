@@ -49,16 +49,23 @@ CORS(
 
 
 @app.after_request
-def after_request(response):
-    response.headers.add(
-        "Access-Control-Allow-Headers",
-        "Content-Type,Authorization"
-    )
-    response.headers.add(
-        "Access-Control-Allow-Methods",
-        "GET,POST,PUT,DELETE,OPTIONS"
-    )
+def force_cors_headers(response):
+    origin = request.headers.get("Origin")
+
+    allowed_origins = [
+        "https://stock-engine.vercel.app",
+        "https://stock-engine-git-main-ihit-joshis-projects.vercel.app"
+    ]
+
+    if origin in allowed_origins:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+
     return response
+
 
 # Health check endpoint
 @app.route('/', methods=['GET'])
