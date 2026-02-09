@@ -228,7 +228,7 @@ const Login = ({ onLoginSuccess, onNavigateToSignup }) => {
 
               {/* Options Row */}
               <div className="flex items-center justify-between">
-                <label className="flex items-center space-x-3 text-gray-300 cursor-pointer group">
+                <label className="flex items-center space-x-3 text-gray-300 cursor-pointer group" onClick={() => setRememberMe(!rememberMe)}>
                   <div className={`relative w-5 h-5 border-2 rounded-md transition-all duration-200 ${
                     rememberMe ? 'bg-cyan-500 border-cyan-500' : 'border-gray-600 group-hover:border-cyan-500'
                   }`}>
