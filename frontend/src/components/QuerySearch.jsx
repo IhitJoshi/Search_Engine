@@ -15,18 +15,10 @@ const QuerySearch = () => {
   const filterLiveStocks = useCallback((queryText) => {
     const q = (queryText || "").toLowerCase().trim();
     if (!q) return [];
-    const terms = q.split(/\s+/).filter(Boolean);
     return allStocks.filter((s) => {
       const sym = (s.symbol || "").toLowerCase();
       const name = (s.company_name || "").toLowerCase();
-      const sec = (s.sector || "").toLowerCase();
-      if (sym.startsWith(q) || name.startsWith(q) || sec.startsWith(q)) return true;
-      if (!terms.length) return false;
-      return terms.every((t) => {
-        if (!t) return true;
-        if (sym.startsWith(t) || sec.startsWith(t)) return true;
-        return name.split(/\s+/).some((word) => word.startsWith(t));
-      });
+      return sym.startsWith(q) || name.startsWith(q);
     });
   }, [allStocks]);
 

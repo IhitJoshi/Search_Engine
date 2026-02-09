@@ -40,7 +40,6 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
   const filterLiveStocks = useCallback((queryText, sector) => {
     const q = (queryText || "").toLowerCase().trim();
     const filterNorm = (sector || "").toLowerCase().trim();
-    const terms = q.split(/\s+/).filter(Boolean);
     const filtered = allStocks.filter((s) => {
       const sym = (s.symbol || "").toLowerCase();
       const name = (s.company_name || "").toLowerCase();
@@ -48,14 +47,7 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
       const inSector = filterNorm ? sec === filterNorm || sec.includes(filterNorm) : true;
       if (!inSector) return false;
       if (!q) return true;
-      if (sym.startsWith(q) || name.startsWith(q) || sec.startsWith(q)) return true;
-      if (!terms.length) return false;
-      return terms.every((t) => {
-        if (!t) return true;
-        if (sym.startsWith(t)) return true;
-        if (sec.startsWith(t)) return true;
-        return name.split(/\s+/).some((word) => word.startsWith(t));
-      });
+      return sym.startsWith(q) || name.startsWith(q);
     });
     const limitValue = stockLimit ?? filtered.length;
     return filtered.slice(0, limitValue);
