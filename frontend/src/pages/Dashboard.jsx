@@ -37,6 +37,21 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
       return r;
     });
   }, []);
+  const filterLiveStocks = useCallback((queryText, sector) => {
+    const q = (queryText || "").toLowerCase().trim();
+    const filterNorm = (sector || "").toLowerCase().trim();
+    const filtered = allStocks.filter((s) => {
+      const sym = (s.symbol || "").toLowerCase();
+      const name = (s.company_name || "").toLowerCase();
+      const sec = (s.sector || "").toLowerCase();
+      const inSector = filterNorm ? sec === filterNorm || sec.includes(filterNorm) : true;
+      if (!inSector) return false;
+      if (!q) return true;
+      return sym.includes(q) || name.includes(q) || sec.includes(q);
+    });
+    const limitValue = stockLimit ?? filtered.length;
+    return filtered.slice(0, limitValue);
+  }, [allStocks, stockLimit]);
 
   // 🟢 Fetch stocks initially and every 10 seconds
   useEffect(() => {
@@ -238,13 +253,12 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
     triggerSearch();
   }, [initialQuery, sectorFilter, stockLimit]);
 
-  // Live search while typing (debounced)
+  // Live search while typing (instant local filter + debounced backend)
   useEffect(() => {
     const query = searchQuery.trim();
     if (!query && !sectorFilter) {
       if (allStocks.length > 0) {
-        const limitValue = stockLimit ?? allStocks.length;
-        const limited = allStocks.slice(0, limitValue);
+        const limited = filterLiveStocks("", "");
         setDisplayedStocks(limited);
         setStats({ total: limited.length, time: 0, query: "Showing all stocks" });
         setMessage({ text: "", type: "" });
@@ -252,16 +266,24 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
       return;
     }
 
-    if (!query) {
-      return;
+    // Immediate local filter for live results
+    if (allStocks.length > 0) {
+      const limited = filterLiveStocks(query, sectorFilter);
+      setDisplayedStocks(limited);
+      setStats({ total: limited.length, time: 0, query: query || sectorFilter });
+      setMessage({ text: limited.length ? "Showing live results" : "No results found.", type: limited.length ? "success" : "info" });
     }
 
+    if (!query) return;
+
     const timer = setTimeout(() => {
-      performSearch(query);
+      if (query.length >= 2) {
+        performSearch(query);
+      }
     }, 350);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, sectorFilter, stockLimit, allStocks, performSearch]);
+  }, [searchQuery, sectorFilter, stockLimit, allStocks, performSearch, filterLiveStocks]);
 
   // When navigating for "All Stocks", update list after allStocks arrives
   useEffect(() => {
