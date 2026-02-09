@@ -416,7 +416,7 @@ def health_check():
 @optimized_api.route('/metrics', methods=['GET'])
 def get_metrics():
     """Get performance metrics"""
-    from cache_manager import stock_cache, chart_cache, search_cache, aggregation_cache
+    from utils.cache_manager import stock_cache, chart_cache, search_cache, aggregation_cache
     
     return jsonify({
         'caches': {
@@ -433,7 +433,7 @@ def get_metrics():
 @optimized_api.route('/cache/clear', methods=['POST'])
 def clear_caches():
     """Clear all caches (admin endpoint)"""
-    from cache_manager import invalidate_stock_cache
+    from utils.cache_manager import invalidate_stock_cache
     
     invalidate_stock_cache()
     aggregation_cache.clear()

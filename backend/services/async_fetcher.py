@@ -301,7 +301,7 @@ def fetch_chart_data_parallel(
     OPTIMIZATION: Instead of sequential fetches for 1D, 5D, 1M, etc.,
     fetch all at once.
     """
-    from cache_manager import chart_cache
+    from utils.cache_manager import chart_cache
     
     use_all_cache = periods is None
     if periods is None:
