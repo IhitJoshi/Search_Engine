@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../config/api";
-import QuerySearch from "./QuerySearch";
+import api from "../services/api";
+import QuerySearch from "../components/QuerySearch";
 
 const Home = ({ username, onLogout, onNavigateToSearch }) => {
   const [stocks, setStocks] = useState([]);

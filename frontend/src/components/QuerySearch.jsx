@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import api from "../config/api";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import api from "../services/api";
 import StockCard from "./StockCard";
 import StockDetails from "./StockDetails"; // 👈 import your detailed modal
 
@@ -8,12 +8,20 @@ const QuerySearch = () => {
   const [results, setResults] = useState([]);
   const [summary, setSummary] = useState("");
   const [selectedSymbol, setSelectedSymbol] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const debounceRef = useRef(null);
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
+  const runSearch = useCallback(async (queryText) => {
+    const q = (queryText || "").trim();
+    if (!q) {
+      setResults([]);
+      setSummary("");
+      return;
+    }
+    setIsSearching(true);
     try {
       const res = await api.post("/api/ai_search", {
-        query: searchQuery,
+        query: q,
       });
       if (res.data.results && res.data.results.length > 0) {
         setResults(res.data.results);
@@ -21,15 +29,38 @@ const QuerySearch = () => {
       } else {
         setResults([]);
         setSummary(
-          res.data.summary || `No matching results found for "${searchQuery}".`
+          res.data.summary || `No matching results found for "${q}".`
         );
       }
     } catch (error) {
       console.error("Error:", error);
       setResults([]);
       setSummary("Server error or invalid query.");
+    } finally {
+      setIsSearching(false);
     }
+  }, []);
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    runSearch(searchQuery);
   };
+
+  useEffect(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    const q = searchQuery.trim();
+    if (!q) {
+      setResults([]);
+      setSummary("");
+      return;
+    }
+    debounceRef.current = setTimeout(() => {
+      runSearch(q);
+    }, 300);
+    return () => clearTimeout(debounceRef.current);
+  }, [searchQuery, runSearch]);
 
   return (
     <div className="px-6">
@@ -62,7 +93,7 @@ const QuerySearch = () => {
             type="submit"
             className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-8 py-5 font-semibold transition-all duration-300"
           >
-            Search
+            {isSearching ? "Searching..." : "Search"}
           </button>
         </div>
       </form>

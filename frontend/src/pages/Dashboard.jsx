@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../config/api";
-import StockCard from "./StockCard";
-import StockDetails from "./StockDetails";
+import api from "../services/api";
+import StockCard from "../components/StockCard";
+import StockDetails from "../components/StockDetails";
 
-const Search = ({ username, onLogout, initialQuery = "", sectorFilter = "", stockLimit = null, onBackToHome }) => {
+const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", stockLimit = null, onBackToHome }) => {
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [displayedStocks, setDisplayedStocks] = useState([]);
   const [allStocks, setAllStocks] = useState([]);
@@ -37,6 +37,21 @@ const Search = ({ username, onLogout, initialQuery = "", sectorFilter = "", stoc
       return r;
     });
   }, []);
+  const filterLiveStocks = useCallback((queryText, sector) => {
+    const q = (queryText || "").toLowerCase().trim();
+    const filterNorm = (sector || "").toLowerCase().trim();
+    const filtered = allStocks.filter((s) => {
+      const sym = (s.symbol || "").toLowerCase();
+      const name = (s.company_name || "").toLowerCase();
+      const sec = (s.sector || "").toLowerCase();
+      const inSector = filterNorm ? sec === filterNorm || sec.includes(filterNorm) : true;
+      if (!inSector) return false;
+      if (!q) return true;
+      return sym.includes(q) || name.includes(q) || sec.includes(q);
+    });
+    const limitValue = stockLimit ?? filtered.length;
+    return filtered.slice(0, limitValue);
+  }, [allStocks, stockLimit]);
 
   // 🟢 Fetch stocks initially and every 10 seconds
   useEffect(() => {
@@ -77,8 +92,9 @@ const Search = ({ username, onLogout, initialQuery = "", sectorFilter = "", stoc
   }, []);
 
   // 🔍 Perform search - memoized to prevent infinite loops
-  const performSearch = useCallback(async () => {
-    const query = searchQuery.trim();
+  const performSearch = useCallback(async (overrideQuery) => {
+    const rawQuery = typeof overrideQuery === "string" ? overrideQuery : searchQuery;
+    const query = rawQuery.trim();
     
     setIsLoading(true);
     setMessage({ text: "", type: "" });
@@ -218,7 +234,7 @@ const Search = ({ username, onLogout, initialQuery = "", sectorFilter = "", stoc
     const triggerSearch = async () => {
       if (initialQuery && initialQuery.trim()) {
         // Search by query
-        await performSearch();
+        await performSearch(initialQuery);
       } else if (sectorFilter) {
         // For sector pages, don't call backend search; live data effects will populate
         // Show a loading message while waiting for live data
@@ -236,6 +252,38 @@ const Search = ({ username, onLogout, initialQuery = "", sectorFilter = "", stoc
     
     triggerSearch();
   }, [initialQuery, sectorFilter, stockLimit]);
+
+  // Live search while typing (instant local filter + debounced backend)
+  useEffect(() => {
+    const query = searchQuery.trim();
+    if (!query && !sectorFilter) {
+      if (allStocks.length > 0) {
+        const limited = filterLiveStocks("", "");
+        setDisplayedStocks(limited);
+        setStats({ total: limited.length, time: 0, query: "Showing all stocks" });
+        setMessage({ text: "", type: "" });
+      }
+      return;
+    }
+
+    // Immediate local filter for live results
+    if (allStocks.length > 0) {
+      const limited = filterLiveStocks(query, sectorFilter);
+      setDisplayedStocks(limited);
+      setStats({ total: limited.length, time: 0, query: query || sectorFilter });
+      setMessage({ text: limited.length ? "Showing live results" : "No results found.", type: limited.length ? "success" : "info" });
+    }
+
+    if (!query) return;
+
+    const timer = setTimeout(() => {
+      if (query.length >= 2) {
+        performSearch(query);
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, sectorFilter, stockLimit, allStocks, performSearch, filterLiveStocks]);
 
   // When navigating for "All Stocks", update list after allStocks arrives
   useEffect(() => {
@@ -581,4 +629,4 @@ const Search = ({ username, onLogout, initialQuery = "", sectorFilter = "", stoc
   );
 };
 
-export default Search;
+export default Dashboard;
