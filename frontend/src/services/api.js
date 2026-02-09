@@ -9,7 +9,7 @@ import axios from "axios";
  * - Easy environment switching between development and production
  * 
  * Usage:
- *   import api from "../config/api";
+ *   import api from "../services/api";
  *   api.get("/api/stocks");
  *   api.post("/api/login", { username, password });
  * 

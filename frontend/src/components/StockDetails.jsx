@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Chart, LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Tooltip, Filler } from "chart.js";
-import api from "../config/api";
+import api from "../services/api";
 
 Chart.register(LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Tooltip, Filler);
 

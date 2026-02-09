@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../config/api";
+import api from "../services/api";
 
 const menuItems = [
   { key: "overview", label: "Overview" },

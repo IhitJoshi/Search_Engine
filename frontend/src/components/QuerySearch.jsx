@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import api from "../config/api";
+import api from "../services/api";
 import StockCard from "./StockCard";
 import StockDetails from "./StockDetails"; // 👈 import your detailed modal
 

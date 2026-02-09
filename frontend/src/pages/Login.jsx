@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../config/api';
+import api from "../services/api";
 
 const Login = ({ onLoginSuccess, onNavigateToSignup }) => {
   const [formData, setFormData] = useState({

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../config/api";
-import StockCard from "./StockCard";
-import StockDetails from "./StockDetails";
+import api from "../services/api";
+import StockCard from "../components/StockCard";
+import StockDetails from "../components/StockDetails";
 
-const Search = ({ username, onLogout, initialQuery = "", sectorFilter = "", stockLimit = null, onBackToHome }) => {
+const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", stockLimit = null, onBackToHome }) => {
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [displayedStocks, setDisplayedStocks] = useState([]);
   const [allStocks, setAllStocks] = useState([]);
@@ -581,4 +581,4 @@ const Search = ({ username, onLogout, initialQuery = "", sectorFilter = "", stoc
   );
 };
 
-export default Search;
+export default Dashboard;
