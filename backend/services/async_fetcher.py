@@ -331,29 +331,47 @@ def fetch_chart_data_parallel(
         try:
             config = period_config.get(period)
             if not config:
-                return period, None
+                logger.debug(f"No config for period {period}")
+                return period, []
             
             stock = yf.Ticker(symbol)
             hist = stock.history(period=config[0], interval=config[1])
             
-            if hist.empty:
-                return period, None
+            if hist is None or hist.empty:
+                logger.debug(f"No history data for {symbol} period {period}")
+                return period, []
             
             hist = hist.reset_index()
             date_col = 'Datetime' if 'Datetime' in hist.columns else 'Date'
             
-            chart_data = [
-                {
-                    'date': row[date_col].strftime('%Y-%m-%d' if period != '1D' else '%H:%M'),
-                    'price': float(row['Close'])
-                }
-                for _, row in hist.iterrows()
-            ]
+            # Safely build chart data with error handling for each row
+            chart_data = []
+            for _, row in hist.iterrows():
+                try:
+                    date_val = row[date_col]
+                    price_val = row.get('Close')
+                    
+                    if price_val is None or price_val != price_val:  # NaN check
+                        continue
+                    
+                    # Safe date formatting
+                    if hasattr(date_val, 'strftime'):
+                        date_str = date_val.strftime('%Y-%m-%d' if period != '1D' else '%H:%M')
+                    else:
+                        date_str = str(date_val)
+                    
+                    chart_data.append({
+                        'date': date_str,
+                        'price': float(price_val)
+                    })
+                except (ValueError, TypeError, AttributeError) as row_err:
+                    logger.debug(f"Error processing row for {symbol} {period}: {row_err}")
+                    continue
             
             return period, chart_data
         except Exception as e:
             logger.error(f"Error fetching {period} chart for {symbol}: {e}")
-            return period, None
+            return period, []
     
     # Parallel fetch all periods
     with ThreadPoolExecutor(max_workers=5) as executor:

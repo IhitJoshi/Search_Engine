@@ -94,6 +94,7 @@ def get_stock_details(symbol):
     - Parallel period fetching (5x faster)
     - Lazy loading of chart data
     - Reduced API calls via caching
+    - Safe error handling - returns 200 always
     """
     try:
         range_param = request.args.get("range", "1D").upper()
@@ -109,31 +110,64 @@ def get_stock_details(symbol):
         
         # Fetch stock info if not cached
         if not cached_info:
-            stock = yf.Ticker(symbol)
-            info = {}
             try:
-                info = stock.info
-            except Exception:
-                logger.exception("Failed fetching stock.info")
-            
-            cached_info = {
-                "symbol": symbol,
-                "name": info.get("longName", symbol),
-                "sector": info.get("sector", "N/A"),
-                "currentPrice": info.get("currentPrice", None),
-                "marketCap": info.get("marketCap", None),
-                "volume": info.get("volume", None),
-            }
-            stock_cache.set(cache_key_info, cached_info, ttl=60)
+                stock = yf.Ticker(symbol)
+                info = {}
+                try:
+                    info = stock.info
+                except Exception:
+                    logger.exception("Failed fetching stock.info")
+                
+                cached_info = {
+                    "symbol": symbol,
+                    "name": info.get("longName", symbol),
+                    "sector": info.get("sector", "N/A"),
+                    "currentPrice": info.get("currentPrice", None),
+                    "marketCap": info.get("marketCap", None),
+                    "volume": info.get("volume", None),
+                }
+                stock_cache.set(cache_key_info, cached_info, ttl=60)
+            except Exception as e:
+                logger.error(f"Stock info fetch failed for {symbol}: {e}")
+                cached_info = {
+                    "symbol": symbol,
+                    "name": symbol,
+                    "sector": "N/A",
+                    "currentPrice": None,
+                    "marketCap": None,
+                    "volume": None,
+                }
         
         # Fetch chart data if not cached
         if not cached_chart:
-            all_charts = fetch_chart_data_parallel(symbol, [range_param])
-            cached_chart = all_charts.get(range_param, [])
-            chart_cache.set(cache_key_chart, cached_chart, ttl=300)
+            try:
+                all_charts = fetch_chart_data_parallel(symbol, [range_param])
+                cached_chart = all_charts.get(range_param, [])
+                # Ensure it's a list, not None
+                if cached_chart is None:
+                    cached_chart = []
+                chart_cache.set(cache_key_chart, cached_chart, ttl=300)
+            except Exception as e:
+                logger.error(f"Chart data fetch failed for {symbol} {range_param}: {e}")
+                cached_chart = []
         
-        return jsonify({"details": cached_info, "chart": cached_chart})
+        # Ensure chart is always a list
+        if cached_chart is None:
+            cached_chart = []
+        
+        return jsonify({"details": cached_info, "chart": cached_chart}), 200
 
-    except Exception:
-        logger.exception("Stock details error")
-        return jsonify({"error": "Failed to fetch stock details"}), 500
+    except Exception as e:
+        logger.exception(f"Stock details error for {symbol}: {e}")
+        # Return graceful error response with status 200 and empty data
+        return jsonify({
+            "details": {
+                "symbol": symbol.upper() if symbol else "N/A",
+                "name": symbol.upper() if symbol else "N/A",
+                "sector": "N/A",
+                "currentPrice": None,
+                "marketCap": None,
+                "volume": None,
+            },
+            "chart": []
+        }), 200
