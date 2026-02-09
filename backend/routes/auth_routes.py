@@ -328,13 +328,13 @@ def google_callback():
         
         if token_response.status_code != 200:
             logger.error(f"Token exchange failed: {token_response.text}")
-            raise APIError("Failed to exchange authorization code", 400)
+            raise Exception("Failed to exchange authorization code")
         
         tokens = token_response.json()
         access_token = tokens.get("access_token")
         
         if not access_token:
-            raise APIError("No access token received", 400)
+            raise Exception("No access token received")
         
         # Fetch user info from Google
         userinfo_response = requests.get(
@@ -345,7 +345,7 @@ def google_callback():
         
         if userinfo_response.status_code != 200:
             logger.error(f"Failed to fetch Google user info: {userinfo_response.text}")
-            raise APIError("Failed to fetch Google user info", 400)
+            raise Exception("Failed to fetch Google user info")
         
         userinfo = userinfo_response.json()
         
@@ -354,8 +354,8 @@ def google_callback():
         email = userinfo.get("email")
         name = userinfo.get("name")
         
-        if not all([google_id, email]):
-            raise APIError("Missing required user information from Google", 400)
+        if not email:
+            raise Exception("Missing required email from Google user info")
         
         logger.info(f"Google OAuth successful for email: {email}")
         
@@ -368,16 +368,10 @@ def google_callback():
             has_provider = "provider" in columns
             has_password_hash = "password_hash" in columns
             
-            if has_google_id:
-                cursor.execute(
-                    "SELECT id, username, email FROM users WHERE google_id = ? OR email = ?",
-                    (google_id, email)
-                )
-            else:
-                cursor.execute(
-                    "SELECT id, username, email FROM users WHERE email = ?",
-                    (email,)
-                )
+            cursor.execute(
+                "SELECT id, username, email FROM users WHERE email = ?",
+                (email,)
+            )
             
             user = cursor.fetchone()
             
@@ -413,7 +407,7 @@ def google_callback():
                 if has_password_hash:
                     columns_to_insert.append("password_hash")
                     values.append(None)
-                if has_google_id:
+                if has_google_id and google_id:
                     columns_to_insert.append("google_id")
                     values.append(google_id)
                 if has_provider:
