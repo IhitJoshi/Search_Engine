@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import api from "../services/api";
 import StockCard from "./StockCard";
 import StockDetails from "./StockDetails"; // 👈 import your detailed modal
@@ -9,7 +9,49 @@ const QuerySearch = () => {
   const [summary, setSummary] = useState("");
   const [selectedSymbol, setSelectedSymbol] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
-  const debounceRef = useRef(null);
+  const [allStocks, setAllStocks] = useState([]);
+  const [isLiveLoading, setIsLiveLoading] = useState(false);
+
+  const filterLiveStocks = useCallback((queryText) => {
+    const q = (queryText || "").toLowerCase().trim();
+    if (!q) return [];
+    const terms = q.split(/\s+/).filter(Boolean);
+    return allStocks.filter((s) => {
+      const sym = (s.symbol || "").toLowerCase();
+      const name = (s.company_name || "").toLowerCase();
+      const sec = (s.sector || "").toLowerCase();
+      if (sym.startsWith(q) || name.startsWith(q) || sec.startsWith(q)) return true;
+      if (!terms.length) return false;
+      return terms.every((t) => {
+        if (!t) return true;
+        if (sym.startsWith(t) || sec.startsWith(t)) return true;
+        return name.split(/\s+/).some((word) => word.startsWith(t));
+      });
+    });
+  }, [allStocks]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchStocks = async () => {
+      try {
+        setIsLiveLoading(true);
+        const res = await api.get("/api/stocks");
+        if (isMounted) {
+          setAllStocks(Array.isArray(res.data) ? res.data : []);
+        }
+      } catch (err) {
+        console.error("Error fetching live stocks:", err);
+      } finally {
+        if (isMounted) setIsLiveLoading(false);
+      }
+    };
+    fetchStocks();
+    const interval = setInterval(fetchStocks, 10000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const runSearch = useCallback(async (queryText) => {
     const q = (queryText || "").trim();
@@ -46,20 +88,20 @@ const QuerySearch = () => {
   };
 
   useEffect(() => {
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-    }
     const q = searchQuery.trim();
     if (!q) {
       setResults([]);
       setSummary("");
       return;
     }
-    debounceRef.current = setTimeout(() => {
-      runSearch(q);
-    }, 300);
-    return () => clearTimeout(debounceRef.current);
-  }, [searchQuery, runSearch]);
+    const filtered = filterLiveStocks(q);
+    setResults(filtered);
+    setSummary(
+      filtered.length
+        ? `Showing ${filtered.length} live result${filtered.length === 1 ? "" : "s"}`
+        : `No matching stocks found for "${q}".`
+    );
+  }, [searchQuery, filterLiveStocks]);
 
   return (
     <div className="px-6">
@@ -102,6 +144,12 @@ const QuerySearch = () => {
       {summary && (
         <p className="text-center text-gray-400 mb-8 transition-all">
           {summary}
+        </p>
+      )}
+
+      {isLiveLoading && (
+        <p className="text-center text-cyan-400 mb-4 text-sm">
+          Updating live data...
         </p>
       )}
 
