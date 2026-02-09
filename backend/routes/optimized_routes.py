@@ -167,37 +167,48 @@ def get_stock_detail_optimized(symbol: str):
     - Cached stock details
     - Optional chart data (lazy loading)
     - Parallel chart fetching for all periods
+    - Never crashes - returns 200 always
     """
-    include_chart = request.args.get('chart', 'false').lower() == 'true'
-    chart_period = request.args.get('period', '1D')
-    
-    symbol = symbol.upper()
-    
-    # Check stock cache
-    cache_key_stock = f"stock_detail:{symbol}"
-    cached_stock = stock_cache.get(cache_key_stock)
-    
-    if not cached_stock:
-        # Fetch from database
-        stocks = optimized_db.get_stocks_batch([symbol])
-        if symbol not in stocks:
-            return jsonify({'error': 'Stock not found'}), 404
-        cached_stock = stocks[symbol]
-        stock_cache.set(cache_key_stock, cached_stock, ttl=60)
-    
-    result = {'details': cached_stock}
-    
-    # Lazy load chart data only if requested
-    if include_chart:
-        cache_key_chart = f"chart:{symbol}:{chart_period}"
-        cached_chart = chart_cache.get(cache_key_chart)
+    try:
+        include_chart = request.args.get('chart', 'false').lower() == 'true'
+        chart_period = request.args.get('period', '1D')
         
-        if not cached_chart:
-            all_charts = fetch_chart_data_parallel(symbol, [chart_period])
-            cached_chart = all_charts.get(chart_period, [])
-            chart_cache.set(cache_key_chart, cached_chart, ttl=300)
+        symbol = symbol.upper()
         
-        result['chart'] = cached_chart
+        # Check stock cache
+        cache_key_stock = f"stock_detail:{symbol}"
+        cached_stock = stock_cache.get(cache_key_stock)
+        
+        if not cached_stock:
+            # Fetch from database
+            stocks = optimized_db.get_stocks_batch([symbol])
+            if symbol not in stocks:
+                return jsonify({'error': 'Stock not found'}), 404
+            cached_stock = stocks[symbol]
+            stock_cache.set(cache_key_stock, cached_stock, ttl=60)
+        
+        result = {'details': cached_stock}
+        
+        # Lazy load chart data only if requested
+        if include_chart:
+            try:
+                cache_key_chart = f"chart:{symbol}:{chart_period}"
+                cached_chart = chart_cache.get(cache_key_chart)
+                
+                if not cached_chart:
+                    all_charts = fetch_chart_data_parallel(symbol, [chart_period])
+                    cached_chart = all_charts.get(chart_period, [])
+                    chart_cache.set(cache_key_chart, cached_chart, ttl=300)
+                
+                result['chart'] = cached_chart if cached_chart else []
+            except Exception as e:
+                logger.error(f"Chart fetch error for {symbol} {chart_period}: {e}")
+                result['chart'] = []
+        
+        return jsonify(result), 200
+    except Exception as e:
+        logger.error(f"Stock detail error for {symbol}: {e}")
+        return jsonify({'details': {'symbol': symbol.upper() if symbol else 'N/A'}}), 200
     
     return jsonify(result)
 
@@ -209,22 +220,27 @@ def get_chart_only(symbol: str):
     Micro-endpoint for chart data only.
     
     OPTIMIZATION: Smaller payload for chart-only updates.
+    Never crashes - returns 200 always.
     """
-    period = request.args.get('period', '1D')
-    symbol = symbol.upper()
-    
-    cache_key_chart = f"chart:{symbol}:{period}"
-    cached_chart = chart_cache.get(cache_key_chart)
-    
-    if cached_chart:
-        return jsonify({'symbol': symbol, 'period': period, 'data': cached_chart})
-    
-    all_charts = fetch_chart_data_parallel(symbol, [period])
-    chart_data = all_charts.get(period, [])
-    
-    chart_cache.set(cache_key_chart, chart_data, ttl=300)
-    
-    return jsonify({'symbol': symbol, 'period': period, 'data': chart_data})
+    try:
+        period = request.args.get('period', '1D')
+        symbol = symbol.upper()
+        
+        cache_key_chart = f"chart:{symbol}:{period}"
+        cached_chart = chart_cache.get(cache_key_chart)
+        
+        if cached_chart:
+            return jsonify({'symbol': symbol, 'period': period, 'data': cached_chart}), 200
+        
+        all_charts = fetch_chart_data_parallel(symbol, [period])
+        chart_data = all_charts.get(period, [])
+        
+        chart_cache.set(cache_key_chart, chart_data, ttl=300)
+        
+        return jsonify({'symbol': symbol, 'period': period, 'data': chart_data}), 200
+    except Exception as e:
+        logger.error(f"Chart only fetch error for {symbol} {period}: {e}")
+        return jsonify({'symbol': symbol.upper() if symbol else 'N/A', 'period': 'N/A', 'data': []}), 200
 
 
 @optimized_api.route('/stocks/<symbol>/charts', methods=['GET'])
@@ -234,19 +250,24 @@ def get_all_charts(symbol: str):
     Get all chart periods in single request.
     
     OPTIMIZATION: Single request instead of 5 separate requests.
+    Never crashes - returns 200 always.
     """
-    symbol = symbol.upper()
-    
-    cache_key_all = f"charts_all:{symbol}"
-    cached = chart_cache.get(cache_key_all)
-    
-    if cached:
-        return jsonify({'symbol': symbol, 'charts': cached})
-    
-    charts = fetch_chart_data_parallel(symbol)
-    chart_cache.set(cache_key_all, charts, ttl=300)
-    
-    return jsonify({'symbol': symbol, 'charts': charts})
+    try:
+        symbol = symbol.upper()
+        
+        cache_key_all = f"charts_all:{symbol}"
+        cached = chart_cache.get(cache_key_all)
+        
+        if cached:
+            return jsonify({'symbol': symbol, 'charts': cached}), 200
+        
+        charts = fetch_chart_data_parallel(symbol)
+        chart_cache.set(cache_key_all, charts, ttl=300)
+        
+        return jsonify({'symbol': symbol, 'charts': charts}), 200
+    except Exception as e:
+        logger.error(f"All charts fetch error for {symbol}: {e}")
+        return jsonify({'symbol': symbol.upper() if symbol else 'N/A', 'charts': {}}), 200
 
 
 # ============================================================================
