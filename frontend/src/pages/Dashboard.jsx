@@ -40,6 +40,7 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
   const filterLiveStocks = useCallback((queryText, sector) => {
     const q = (queryText || "").toLowerCase().trim();
     const filterNorm = (sector || "").toLowerCase().trim();
+    const terms = q.split(/\s+/).filter(Boolean);
     const filtered = allStocks.filter((s) => {
       const sym = (s.symbol || "").toLowerCase();
       const name = (s.company_name || "").toLowerCase();
@@ -47,7 +48,14 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
       const inSector = filterNorm ? sec === filterNorm || sec.includes(filterNorm) : true;
       if (!inSector) return false;
       if (!q) return true;
-      return sym.includes(q) || name.includes(q) || sec.includes(q);
+      if (sym.startsWith(q) || name.startsWith(q) || sec.startsWith(q)) return true;
+      if (!terms.length) return false;
+      return terms.every((t) => {
+        if (!t) return true;
+        if (sym.startsWith(t)) return true;
+        if (sec.startsWith(t)) return true;
+        return name.split(/\s+/).some((word) => word.startsWith(t));
+      });
     });
     const limitValue = stockLimit ?? filtered.length;
     return filtered.slice(0, limitValue);
@@ -253,7 +261,7 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
     triggerSearch();
   }, [initialQuery, sectorFilter, stockLimit]);
 
-  // Live search while typing (instant local filter + debounced backend)
+  // Live search while typing (instant local filter only)
   useEffect(() => {
     const query = searchQuery.trim();
     if (!query && !sectorFilter) {
@@ -275,15 +283,7 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
     }
 
     if (!query) return;
-
-    const timer = setTimeout(() => {
-      if (query.length >= 1) {
-        performSearch(query);
-      }
-    }, 350);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery, sectorFilter, stockLimit, allStocks, performSearch, filterLiveStocks]);
+  }, [searchQuery, sectorFilter, stockLimit, allStocks, filterLiveStocks]);
 
   // When navigating for "All Stocks", update list after allStocks arrives
   useEffect(() => {
