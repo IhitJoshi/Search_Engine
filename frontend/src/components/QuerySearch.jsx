@@ -87,14 +87,15 @@ const QuerySearch = () => {
   useEffect(() => {
     const q = searchQuery.trim();
     if (!q) {
-      setResults([]);
-      setSummary("");
+      if (searchMode === "live") {
+        setResults([]);
+        setSummary("");
+      }
       return;
     }
-    // If AI search already ran for this query, don't override its results with live updates.
-    if (searchMode === "ai" && lastAiQuery === q) return;
+    // Only run live filtering while typing.
+    if (searchMode !== "live") return;
 
-    // Live prefix filter while typing; do not show "not found" until Search pressed
     const filtered = filterLiveStocks(q);
     setResults(filtered);
     if (filtered.length > 0) {
@@ -102,7 +103,7 @@ const QuerySearch = () => {
     } else {
       setSummary("Searching...");
     }
-  }, [searchQuery, filterLiveStocks, searchMode, lastAiQuery]);
+  }, [searchQuery, filterLiveStocks, searchMode]);
 
   return (
     <div className="px-6">
