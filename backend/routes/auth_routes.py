@@ -1,6 +1,6 @@
 from flask import request, jsonify, redirect, session, url_for
 from utils.database import get_connection, hash_password
-from app_init import app, logger
+from app_init import app, logger, FRONTEND_URL
 from errors import APIError, require_auth
 import sqlite3
 import os
@@ -301,7 +301,7 @@ def google_callback():
         
         if error:
             logger.warning(f"Google OAuth error: {error}")
-            return redirect(f"{os.environ.get('FRONTEND_URL', 'http://localhost:5173')}/login?error={error}")
+            return redirect(f"{FRONTEND_URL}/login?error={error}")
         
         if not code:
             raise APIError("Authorization code not received", 400)
@@ -396,8 +396,7 @@ def google_callback():
         session['username'] = username
         session['email'] = user_email
         
-        frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:5173")
-        redirect_url = f"{frontend_url}/home"
+        redirect_url = f"{FRONTEND_URL}/home"
         
         logger.info(f"Google OAuth user logged in, redirecting to {redirect_url}")
         return redirect(redirect_url)
@@ -406,5 +405,4 @@ def google_callback():
         raise
     except Exception as e:
         logger.exception("Google callback error")
-        frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:5173")
-        return redirect(f"{frontend_url}/login?error=oauth_failed")
+        return redirect(f"{FRONTEND_URL}/login?error=oauth_failed")

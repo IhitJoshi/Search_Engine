@@ -32,17 +32,28 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = True  # Required for cross-origin cookies
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'  # Required for cross-origin cookies
 
-# CORS configuration - Production origins
+# ========== FRONTEND CONFIGURATION ==========
+# Centralized frontend URL for redirects and CORS
+FRONTEND_URL = os.environ.get(
+    "FRONTEND_URL",
+    "http://localhost:5173"  # Local development default
+)
+
+# CORS allowed origins - production and local development
+ALLOWED_ORIGINS = [
+    FRONTEND_URL,  # Primary frontend URL
+    "https://stock-engine.vercel.app",
+    "https://stock-engine-git-main-ihit-joshis-projects.vercel.app",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175"
+]
+
+# CORS configuration
 CORS(
     app,
     resources={r"/api/*": {
-        "origins": [
-            "https://stock-engine.vercel.app",
-            "https://stock-engine-git-main-ihit-joshis-projects.vercel.app",
-            "http://localhost:5173",
-            "http://localhost:5174",
-            "http://localhost:5175"
-        ]
+        "origins": ALLOWED_ORIGINS
     }},
     supports_credentials=True
 )
@@ -52,12 +63,8 @@ CORS(
 def force_cors_headers(response):
     origin = request.headers.get("Origin")
 
-    allowed_origins = [
-        "https://stock-engine.vercel.app",
-        "https://stock-engine-git-main-ihit-joshis-projects.vercel.app"
-    ]
-
-    if origin in allowed_origins:
+    # Allow any origin that's in our allowed list
+    if origin in ALLOWED_ORIGINS:
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Credentials"] = "true"
 
