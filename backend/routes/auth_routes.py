@@ -331,26 +331,28 @@ def google_callback():
             raise APIError("Failed to exchange authorization code", 400)
         
         tokens = token_response.json()
-        id_token_str = tokens.get("id_token")
+        access_token = tokens.get("access_token")
         
-        if not id_token_str:
-            raise APIError("No ID token received", 400)
+        if not access_token:
+            raise APIError("No access token received", 400)
         
-        # Verify and decode ID token
-        try:
-            id_info = id_token.verify_oauth2_token(
-                id_token_str, 
-                google_requests.Request(),
-                client_id
-            )
-        except Exception as e:
-            logger.error(f"ID token verification failed: {e}")
-            raise APIError("Invalid ID token", 401)
+        # Fetch user info from Google
+        userinfo_response = requests.get(
+            "https://www.googleapis.com/oauth2/v3/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"},
+            timeout=10
+        )
+        
+        if userinfo_response.status_code != 200:
+            logger.error(f"Failed to fetch Google user info: {userinfo_response.text}")
+            raise APIError("Failed to fetch Google user info", 400)
+        
+        userinfo = userinfo_response.json()
         
         # Extract user info
-        google_id = id_info.get("sub")
-        email = id_info.get("email")
-        name = id_info.get("name")
+        google_id = userinfo.get("sub") or userinfo.get("id")
+        email = userinfo.get("email")
+        name = userinfo.get("name")
         
         if not all([google_id, email]):
             raise APIError("Missing required user information from Google", 400)
@@ -360,10 +362,23 @@ def google_callback():
         # Check if user exists
         with get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute(
-                "SELECT id, username, email FROM users WHERE google_id = ? OR email = ?",
-                (google_id, email)
-            )
+            cursor.execute("PRAGMA table_info(users)")
+            columns = {col[1] for col in cursor.fetchall()}
+            has_google_id = "google_id" in columns
+            has_provider = "provider" in columns
+            has_password_hash = "password_hash" in columns
+            
+            if has_google_id:
+                cursor.execute(
+                    "SELECT id, username, email FROM users WHERE google_id = ? OR email = ?",
+                    (google_id, email)
+                )
+            else:
+                cursor.execute(
+                    "SELECT id, username, email FROM users WHERE email = ?",
+                    (email,)
+                )
+            
             user = cursor.fetchone()
             
             if user:
@@ -371,26 +386,47 @@ def google_callback():
                 username = user['username'] or email.split('@')[0]
                 user_email = user['email']
                 logger.info(f"Existing Google user logged in: {email}")
+                
+                update_fields = []
+                params = []
+                if has_google_id and google_id:
+                    update_fields.append("google_id = ?")
+                    params.append(google_id)
+                if has_provider:
+                    update_fields.append("provider = ?")
+                    params.append("google")
+                if update_fields:
+                    params.append(user_email)
+                    cursor.execute(
+                        f"UPDATE users SET {', '.join(update_fields)} WHERE email = ?",
+                        tuple(params)
+                    )
+                    conn.commit()
             else:
                 # New user - create account
                 username = name or email.split('@')[0]
                 user_email = email
                 
-                try:
-                    cursor.execute(
-                        "INSERT INTO users (username, email, google_id) VALUES (?, ?, ?)",
-                        (username, user_email, google_id)
-                    )
-                    conn.commit()
-                    logger.info(f"New Google user created: {email}")
-                except sqlite3.IntegrityError as e:
-                    # Email or username already exists
-                    cursor.execute(
-                        "UPDATE users SET google_id = ? WHERE email = ?",
-                        (google_id, user_email)
-                    )
-                    conn.commit()
-                    logger.info(f"Linked Google ID to existing user: {email}")
+                columns_to_insert = ["username", "email"]
+                values = [username, user_email]
+                
+                if has_password_hash:
+                    columns_to_insert.append("password_hash")
+                    values.append(None)
+                if has_google_id:
+                    columns_to_insert.append("google_id")
+                    values.append(google_id)
+                if has_provider:
+                    columns_to_insert.append("provider")
+                    values.append("google")
+                
+                placeholders = ", ".join(["?"] * len(columns_to_insert))
+                cursor.execute(
+                    f"INSERT INTO users ({', '.join(columns_to_insert)}) VALUES ({placeholders})",
+                    tuple(values)
+                )
+                conn.commit()
+                logger.info(f"New Google user created: {email}")
         
         # Set session
         session['username'] = username
@@ -401,8 +437,6 @@ def google_callback():
         logger.info(f"Google OAuth user logged in, redirecting to {redirect_url}")
         return redirect(redirect_url)
     
-    except APIError:
-        raise
     except Exception as e:
         logger.exception("Google callback error")
         return redirect(f"{FRONTEND_URL}/login?error=oauth_failed")
