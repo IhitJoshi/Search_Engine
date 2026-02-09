@@ -91,15 +91,18 @@ const QuerySearch = () => {
       setSummary("");
       return;
     }
+    // If AI search already ran for this query, don't override its results with live updates.
+    if (searchMode === "ai" && lastAiQuery === q) return;
+
     // Live prefix filter while typing; do not show "not found" until Search pressed
     const filtered = filterLiveStocks(q);
     setResults(filtered);
     if (filtered.length > 0) {
       setSummary(`Showing ${filtered.length} live result${filtered.length === 1 ? "" : "s"}`);
-    } else if (searchMode === "live") {
-      setSummary("");
+    } else {
+      setSummary("Searching...");
     }
-  }, [searchQuery, filterLiveStocks]);
+  }, [searchQuery, filterLiveStocks, searchMode, lastAiQuery]);
 
   return (
     <div className="px-6">
