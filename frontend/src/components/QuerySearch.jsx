@@ -11,6 +11,8 @@ const QuerySearch = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [allStocks, setAllStocks] = useState([]);
   const [isLiveLoading, setIsLiveLoading] = useState(false);
+  const [searchMode, setSearchMode] = useState("live"); // live | ai
+  const [lastAiQuery, setLastAiQuery] = useState("");
 
   const filterLiveStocks = useCallback((queryText) => {
     const q = (queryText || "").toLowerCase().trim();
@@ -52,6 +54,8 @@ const QuerySearch = () => {
       setSummary("");
       return;
     }
+    setSearchMode("ai");
+    setLastAiQuery(q);
     setIsSearching(true);
     try {
       const res = await api.post("/api/ai_search", {
@@ -77,6 +81,7 @@ const QuerySearch = () => {
 
   const handleSearch = (e) => {
     e.preventDefault();
+    runSearch(searchQuery);
   };
 
   useEffect(() => {
@@ -86,13 +91,14 @@ const QuerySearch = () => {
       setSummary("");
       return;
     }
+    // Live prefix filter while typing; do not show "not found" until Search pressed
     const filtered = filterLiveStocks(q);
     setResults(filtered);
-    setSummary(
-      filtered.length
-        ? `Showing ${filtered.length} live result${filtered.length === 1 ? "" : "s"}`
-        : `No matching stocks found for "${q}".`
-    );
+    if (filtered.length > 0) {
+      setSummary(`Showing ${filtered.length} live result${filtered.length === 1 ? "" : "s"}`);
+    } else if (searchMode === "live") {
+      setSummary("");
+    }
   }, [searchQuery, filterLiveStocks]);
 
   return (
@@ -118,7 +124,10 @@ const QuerySearch = () => {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchMode("live");
+              setSearchQuery(e.target.value);
+            }}
             placeholder="Search stocks, symbols, or sectors (e.g., AAPL, Technology, Tesla...)"
             className="flex-1 px-6 py-5 text-lg outline-none bg-transparent text-gray-100 placeholder-gray-500 focus:placeholder-gray-400 transition-colors"
           />
