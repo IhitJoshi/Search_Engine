@@ -259,7 +259,11 @@ const Signup = ({ onSignupSuccess, onNavigateToLogin }) => {
               <div className="text-center">
                 <button 
                   type="button"
-                  onClick={onNavigateToLogin}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onNavigateToLogin();
+                  }}
                   className="inline-flex items-center space-x-2 px-6 py-3.5 border-2 border-gray-600/50 rounded-xl font-semibold text-gray-300 hover:border-cyan-500/50 hover:text-cyan-400 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/10"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
