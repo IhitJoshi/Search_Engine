@@ -228,18 +228,18 @@ const Login = ({ onLoginSuccess, onNavigateToSignup }) => {
 
               {/* Options Row */}
               <div className="flex items-center justify-between">
-                <label className="flex items-center space-x-3 text-gray-300 cursor-pointer group" onClick={() => setRememberMe(!rememberMe)}>
-                  <div className={`relative w-5 h-5 border-2 rounded-md transition-all duration-200 ${
-                    rememberMe ? 'bg-cyan-500 border-cyan-500' : 'border-gray-600 group-hover:border-cyan-500'
-                  }`}>
-                    {rememberMe && (
-                      <svg className="absolute top-0.5 left-0.5 w-3 h-3 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </div>
-                  <span className="text-sm font-medium group-hover:text-cyan-300 transition-colors">Remember me</span>
-                </label>
+                <div className="flex items-center space-x-3">
+                  <input 
+                    type="checkbox" 
+                    id="rememberMe"
+                    checked={rememberMe} 
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-5 h-5 accent-cyan-500 cursor-pointer"
+                  />
+                  <label htmlFor="rememberMe" className="text-sm font-medium text-gray-300 cursor-pointer hover:text-cyan-300 transition-colors">
+                    Remember me
+                  </label>
+                </div>
                 <button 
                   type="button" 
                   onClick={() => setShowForgotPassword(true)}
