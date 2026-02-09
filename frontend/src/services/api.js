@@ -14,13 +14,13 @@ import axios from "axios";
  *   api.post("/api/login", { username, password });
  * 
  * Environment Variables:
- *   VITE_API_URL - The backend API base URL
- *   - Development: http://localhost:5000
- *   - Production: https://stock-engine-c1py.onrender.com
+ *   VITE_API_URL - The backend API base URL (optional)
+ *   - Development: Can be set to http://localhost:5000 if backend runs separately
+ *   - Production: Uses relative paths (empty string) for same-origin requests
  */
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: import.meta.env.VITE_API_URL || "",
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",

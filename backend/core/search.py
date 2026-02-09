@@ -171,7 +171,7 @@ def search_stocks(filters):
 
 def main():
     """Test the search functionality"""
-    from preprocessing import load_dataset, tokenize_all_columns
+    from utils.preprocessing import load_dataset, tokenize_all_columns
     
     logging.basicConfig(level=logging.INFO)
     
