@@ -77,8 +77,9 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
   }, []);
 
   // 🔍 Perform search - memoized to prevent infinite loops
-  const performSearch = useCallback(async () => {
-    const query = searchQuery.trim();
+  const performSearch = useCallback(async (overrideQuery) => {
+    const rawQuery = typeof overrideQuery === "string" ? overrideQuery : searchQuery;
+    const query = rawQuery.trim();
     
     setIsLoading(true);
     setMessage({ text: "", type: "" });
@@ -218,7 +219,7 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
     const triggerSearch = async () => {
       if (initialQuery && initialQuery.trim()) {
         // Search by query
-        await performSearch();
+        await performSearch(initialQuery);
       } else if (sectorFilter) {
         // For sector pages, don't call backend search; live data effects will populate
         // Show a loading message while waiting for live data
@@ -236,6 +237,31 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
     
     triggerSearch();
   }, [initialQuery, sectorFilter, stockLimit]);
+
+  // Live search while typing (debounced)
+  useEffect(() => {
+    const query = searchQuery.trim();
+    if (!query && !sectorFilter) {
+      if (allStocks.length > 0) {
+        const limitValue = stockLimit ?? allStocks.length;
+        const limited = allStocks.slice(0, limitValue);
+        setDisplayedStocks(limited);
+        setStats({ total: limited.length, time: 0, query: "Showing all stocks" });
+        setMessage({ text: "", type: "" });
+      }
+      return;
+    }
+
+    if (!query) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      performSearch(query);
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, sectorFilter, stockLimit, allStocks, performSearch]);
 
   // When navigating for "All Stocks", update list after allStocks arrives
   useEffect(() => {
