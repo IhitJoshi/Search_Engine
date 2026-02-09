@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: stock-engine-backend
+    runtime: python
+    plan: free
+    
+    # Build command - install dependencies from backend directory
+    buildCommand: |
+      cd backend && \
+      pip install --upgrade pip setuptools && \
+      pip install -r requirements.txt
+    
+    # Start command - run Flask with gunicorn from backend directory
+    startCommand: |
+      cd backend && \
+      gunicorn -w 1 -b 0.0.0.0:$PORT -t 120 api:app
+    
+    # Root directory is the repo root (not backend specifically)
+    rootDir: .
+    
+    # Environment configuration
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      
+      - key: FLASK_ENV
+        value: "production"
+      
+      - key: GOOGLE_CLIENT_ID
+        scope: build
+      
+      - key: GOOGLE_CLIENT_SECRET
+        scope: build
+      
+      - key: GOOGLE_REDIRECT_URI
+        value: "https://stock-engine-c1py.onrender.com/api/auth/google/callback"
+      
+      - key: FRONTEND_URL
+        value: "https://stock-engine.vercel.app"
+      
+      - key: FLASK_SECRET_KEY
+        scope: build
