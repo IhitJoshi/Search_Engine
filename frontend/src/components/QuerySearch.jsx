@@ -41,9 +41,8 @@ const QuerySearch = () => {
     }
   }, []);
 
-  const handleSearch = async (e) => {
+  const handleSearch = (e) => {
     e.preventDefault();
-    runSearch(searchQuery);
   };
 
   useEffect(() => {
@@ -90,7 +89,8 @@ const QuerySearch = () => {
             className="flex-1 px-6 py-5 text-lg outline-none bg-transparent text-gray-100 placeholder-gray-500 focus:placeholder-gray-400 transition-colors"
           />
           <button
-            type="submit"
+            type="button"
+            onClick={() => runSearch(searchQuery)}
             className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-8 py-5 font-semibold transition-all duration-300"
           >
             {isSearching ? "Searching..." : "Search"}

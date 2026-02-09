@@ -277,7 +277,7 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
     if (!query) return;
 
     const timer = setTimeout(() => {
-      if (query.length >= 2) {
+      if (query.length >= 1) {
         performSearch(query);
       }
     }, 350);
@@ -423,7 +423,7 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
         {/* Search Section */}
         <div className="mb-12">
           <div className="max-w-4xl mx-auto">
-            <form onSubmit={(e) => { e.preventDefault(); performSearch(); }} className="mb-6">
+            <form onSubmit={(e) => { e.preventDefault(); }} className="mb-6">
               <div className="relative flex items-center bg-gray-800/60 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-700 hover:border-cyan-500/50 transition-all duration-300 overflow-hidden group">
                 <div className="pl-6 text-gray-400 group-hover:text-cyan-400 transition-colors">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -438,7 +438,8 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
                   className="flex-1 px-6 py-5 text-lg outline-none bg-transparent text-gray-100 placeholder-gray-500 focus:placeholder-gray-400 transition-colors"
                 />
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={() => performSearch(searchQuery)}
                   disabled={isLoading}
                   className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-10 py-5 font-semibold transition-all duration-500 flex items-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed group/btn"
                 >
