@@ -12,4 +12,12 @@ pandas>=2.0.0,<3.0.0
 # Natural Language Processing (NLP)
 spacy>=3.7.0,<4.0.0
 
+# Google OAuth 2.0
+google-auth>=2.25.0,<3.0.0
+google-auth-oauthlib>=1.1.0,<2.0.0
+google-auth-httplib2>=0.2.0,<0.3.0
+
+# HTTP requests
+requests>=2.31.0,<3.0.0
+
 gunicorn

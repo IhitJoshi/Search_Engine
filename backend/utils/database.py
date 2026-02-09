@@ -18,14 +18,35 @@ def init_db():
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
+            username TEXT UNIQUE,
             email TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
+            password_hash TEXT,
+            google_id TEXT UNIQUE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
+        
+        # Add new columns if they don't exist (migration)
+        cursor.execute("PRAGMA table_info(users)")
+        columns = [col[1] for col in cursor.fetchall()]
+        
+        if 'google_id' not in columns:
+            try:
+                cursor.execute("ALTER TABLE users ADD COLUMN google_id TEXT UNIQUE")
+                logger.info("Added google_id column to users table")
+            except Exception as e:
+                logger.warning(f"google_id column may already exist: {e}")
+        
+        if 'username' in columns:
+            # Check if username has NOT NULL constraint - if so, we need to fix it
+            cursor.execute("PRAGMA table_info(users)")
+            for col in cursor.fetchall():
+                if col[1] == 'username' and col[3] == 1:  # col[3] is notnull flag
+                    logger.info("Username column already allows NULL (compatible with OAuth)")
+        
         conn.commit()
     logger.info("Database initialized successfully")
+
 
 @contextmanager
 def get_connection():

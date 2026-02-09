@@ -1,8 +1,13 @@
-from flask import request, jsonify
+from flask import request, jsonify, redirect, session, url_for
 from utils.database import get_connection, hash_password
 from app_init import app, logger
 from errors import APIError, require_auth
 import sqlite3
+import os
+import requests
+from urllib.parse import urlencode
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token
 
 
 @app.route("/api/signup", methods=["POST"])
@@ -253,3 +258,153 @@ def change_password():
     except Exception as e:
         logger.exception("Change password error")
         raise APIError("Failed to change password")
+
+# ============ GOOGLE OAUTH 2.0 ROUTES ============
+
+@app.route("/api/auth/google/login", methods=["GET"])
+def google_login():
+    """Redirect to Google OAuth consent screen"""
+    try:
+        client_id = os.environ.get("GOOGLE_CLIENT_ID")
+        redirect_uri = os.environ.get("GOOGLE_REDIRECT_URI")
+        
+        if not client_id or not redirect_uri:
+            raise APIError("Google OAuth not configured", 500)
+        
+        # Build Google OAuth URL
+        params = {
+            "client_id": client_id,
+            "redirect_uri": redirect_uri,
+            "response_type": "code",
+            "scope": "openid email profile",
+            "access_type": "offline"
+        }
+        
+        google_auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
+        logger.info("Redirecting user to Google OAuth consent screen")
+        
+        return redirect(google_auth_url)
+    
+    except APIError:
+        raise
+    except Exception as e:
+        logger.exception("Google login error")
+        raise APIError("Failed to initiate Google OAuth")
+
+
+@app.route("/api/auth/google/callback", methods=["GET"])
+def google_callback():
+    """Handle Google OAuth callback"""
+    try:
+        code = request.args.get("code")
+        error = request.args.get("error")
+        
+        if error:
+            logger.warning(f"Google OAuth error: {error}")
+            return redirect(f"{os.environ.get('FRONTEND_URL', 'http://localhost:5173')}/login?error={error}")
+        
+        if not code:
+            raise APIError("Authorization code not received", 400)
+        
+        # Exchange code for token
+        client_id = os.environ.get("GOOGLE_CLIENT_ID")
+        client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
+        redirect_uri = os.environ.get("GOOGLE_REDIRECT_URI")
+        
+        if not all([client_id, client_secret, redirect_uri]):
+            raise APIError("Google OAuth not properly configured", 500)
+        
+        token_response = requests.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "code": code,
+                "grant_type": "authorization_code",
+                "redirect_uri": redirect_uri
+            },
+            timeout=10
+        )
+        
+        if token_response.status_code != 200:
+            logger.error(f"Token exchange failed: {token_response.text}")
+            raise APIError("Failed to exchange authorization code", 400)
+        
+        tokens = token_response.json()
+        id_token_str = tokens.get("id_token")
+        
+        if not id_token_str:
+            raise APIError("No ID token received", 400)
+        
+        # Verify and decode ID token
+        try:
+            id_info = id_token.verify_oauth2_token(
+                id_token_str, 
+                google_requests.Request(),
+                client_id
+            )
+        except Exception as e:
+            logger.error(f"ID token verification failed: {e}")
+            raise APIError("Invalid ID token", 401)
+        
+        # Extract user info
+        google_id = id_info.get("sub")
+        email = id_info.get("email")
+        name = id_info.get("name")
+        
+        if not all([google_id, email]):
+            raise APIError("Missing required user information from Google", 400)
+        
+        logger.info(f"Google OAuth successful for email: {email}")
+        
+        # Check if user exists
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT id, username, email FROM users WHERE google_id = ? OR email = ?",
+                (google_id, email)
+            )
+            user = cursor.fetchone()
+            
+            if user:
+                # Existing user
+                username = user['username'] or email.split('@')[0]
+                user_email = user['email']
+                logger.info(f"Existing Google user logged in: {email}")
+            else:
+                # New user - create account
+                username = name or email.split('@')[0]
+                user_email = email
+                
+                try:
+                    cursor.execute(
+                        "INSERT INTO users (username, email, google_id) VALUES (?, ?, ?)",
+                        (username, user_email, google_id)
+                    )
+                    conn.commit()
+                    logger.info(f"New Google user created: {email}")
+                except sqlite3.IntegrityError as e:
+                    # Email or username already exists
+                    cursor.execute(
+                        "UPDATE users SET google_id = ? WHERE email = ?",
+                        (google_id, user_email)
+                    )
+                    conn.commit()
+                    logger.info(f"Linked Google ID to existing user: {email}")
+        
+        # Set session
+        session['username'] = username
+        session['email'] = user_email
+        
+        frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:5173")
+        redirect_url = f"{frontend_url}/home"
+        
+        logger.info(f"Google OAuth user logged in, redirecting to {redirect_url}")
+        return redirect(redirect_url)
+    
+    except APIError:
+        raise
+    except Exception as e:
+        logger.exception("Google callback error")
+        frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:5173")
+        return redirect(f"{frontend_url}/login?error=oauth_failed")
