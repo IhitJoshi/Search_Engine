@@ -77,12 +77,7 @@ UPDATE_INTERVAL = 60  # seconds
 class DatabaseManager:
     """Handles all database operations"""
     
-    def __init__(self, db_name=None):
-        if db_name is None:
-            db_name = os.environ.get("STOCKS_DB_PATH", "stocks.db")
-        parent_dir = os.path.dirname(os.path.abspath(db_name))
-        if parent_dir and not os.path.exists(parent_dir):
-            os.makedirs(parent_dir, exist_ok=True)
+    def __init__(self, db_name="stocks.db"):
         self.db_name = db_name
     
     @contextmanager

@@ -13,7 +13,6 @@ import sqlite3
 import threading
 import logging
 import time
-import os
 from typing import List, Dict, Any, Optional, Tuple
 from contextlib import contextmanager
 from queue import Queue, Empty
@@ -137,12 +136,7 @@ class OptimizedStockDB:
     - Proper index utilization
     """
     
-    def __init__(self, db_path: str = None):
-        if db_path is None:
-            db_path = os.environ.get("STOCKS_DB_PATH", "stocks.db")
-        parent_dir = os.path.dirname(os.path.abspath(db_path))
-        if parent_dir and not os.path.exists(parent_dir):
-            os.makedirs(parent_dir, exist_ok=True)
+    def __init__(self, db_path: str = "stocks.db"):
         self.pool = ConnectionPool(db_path, pool_size=10)
         self._ensure_tables()
         self._ensure_indexes()
