@@ -2,10 +2,11 @@ from flask import request, jsonify, redirect, session, url_for
 from utils.database import get_connection, hash_password
 from app_init import app, logger, FRONTEND_URL
 from errors import APIError, require_auth
+from utils.jwt_utils import create_jwt
 import sqlite3
 import os
 import requests
-from urllib.parse import urlencode
+from urllib.parse import urlencode, quote
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
 
@@ -83,13 +84,20 @@ def login():
             session['username'] = user['username']
             session['email'] = user['email']
 
+            # Issue JWT so frontend can authenticate without relying on cookies
+            token = create_jwt({
+                "username": user['username'],
+                "email": user['email']
+            })
+
             logger.info(f"User logged in: {username}")
             return jsonify({
                 'message': 'Login successful!',
                 'user': {
                     'username': user['username'],
                     'email': user['email']
-                }
+                },
+                'token': token
             })
         else:
             raise APIError("Invalid credentials", 401)
@@ -140,9 +148,24 @@ def forgot_password():
 def check_auth():
     """Check if user is authenticated and return user info"""
     try:
-        from flask import session
+        from flask import session, request
         username = session.get('username')
         email = session.get('email')
+
+        # If no session, try JWT from Authorization header
+        if not username:
+            auth_header = request.headers.get("Authorization", "")
+            if auth_header.startswith("Bearer "):
+                token = auth_header.split(" ", 1)[1].strip()
+                try:
+                    from utils.jwt_utils import verify_jwt
+                    import jwt
+                    payload = verify_jwt(token)
+                    username = payload.get("username")
+                    email = payload.get("email")
+                except jwt.PyJWTError:
+                    username = None
+                    email = None
 
         if username:
             return jsonify({
@@ -427,8 +450,15 @@ def google_callback():
         session.permanent = True  # Make session persist across browser restarts
         session['username'] = username
         session['email'] = user_email
-        
-        redirect_url = f"{FRONTEND_URL}/home"
+
+        # Issue JWT for frontend (token-based auth independent of cookies)
+        token = create_jwt({
+            "username": username,
+            "email": user_email
+        })
+
+        # Redirect to frontend with token & username in query params
+        redirect_url = f"{FRONTEND_URL}/home?token={quote(token)}&username={quote(username)}"
         
         logger.info(f"Google OAuth user logged in, redirecting to {redirect_url}")
         return redirect(redirect_url)

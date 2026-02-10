@@ -27,9 +27,16 @@ const api = axios.create({
   },
 });
 
-// Request interceptor for debugging (can be removed in production)
+// Request interceptor: attach JWT token if available & log in development
 api.interceptors.request.use(
   (config) => {
+    // Attach Authorization header from localStorage token (JWT)
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
     // Log requests in development
     if (import.meta.env.DEV) {
       console.log(`[API] ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);

@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
 import Home from "../pages/Home";
@@ -11,10 +11,36 @@ import NotFound from "../pages/NotFound";
 
 const AppRoutes = () => {
   const navigate = useNavigate();
-  const { username, isAuthenticated, isLoading, login, logout } = useAuth();
+  const location = useLocation();
+  const { username, isAuthenticated, isLoading, login, logout, refreshAuth } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [sectorFilter, setSectorFilter] = useState("");
   const [stockLimit, setStockLimit] = useState(null);
+
+  // Handle JWT token returned from Google OAuth redirect (?token=...&username=...)
+  useEffect(() => {
+    const search = location.search || "";
+    if (!search.includes("token=")) return;
+
+    const params = new URLSearchParams(search);
+    const token = params.get("token");
+    const userFromUrl = params.get("username");
+
+    if (token) {
+      localStorage.setItem("authToken", token);
+      if (userFromUrl) {
+        localStorage.setItem("username", userFromUrl);
+        localStorage.setItem("isAuthenticated", "true");
+        login(userFromUrl);
+      } else {
+        // Fallback: ask backend who we are using the token
+        refreshAuth && refreshAuth();
+      }
+
+      // Clean the URL so token isn't visible after initial processing
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.search, location.pathname, login, navigate, refreshAuth]);
 
   const handleLoginSuccess = (user) => {
     login(user);

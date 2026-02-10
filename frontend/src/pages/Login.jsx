@@ -48,6 +48,11 @@ const Login = ({ onLoginSuccess, onNavigateToSignup }) => {
           localStorage.removeItem('rememberedUsername');
         }
         
+        // Store JWT token (if provided) so future API calls are authenticated
+        if (data.token) {
+          localStorage.setItem('authToken', data.token);
+        }
+
         localStorage.setItem('isAuthenticated', 'true');
         localStorage.setItem('username', username);
         
