@@ -10,9 +10,9 @@ const Home = ({ username, onLogout, onNavigateToSearch }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const navigate = useNavigate();
 
-  // Categories for the boxes - matching actual database sectors
-  // Categories for the boxes - matching actual database sectors
+  
 // Categories for the boxes - matching actual database sectors
+// Alternative - More cohesive gradient combinations
 const categories = [
   { 
     name: "Technology", 
@@ -23,7 +23,7 @@ const categories = [
     ), 
     filter: "Technology", 
     limit: null, 
-    color: "from-blue-500 to-cyan-500" 
+    color: "from-blue-700 to-blue-500" 
   },
   { 
     name: "Finance", 
@@ -34,7 +34,7 @@ const categories = [
     ), 
     filter: "Financial Services", 
     limit: null, 
-    color: "from-emerald-500 to-green-400" 
+    color: "from-emerald-700 to-emerald-500" 
   },
   { 
     name: "Energy", 
@@ -45,7 +45,7 @@ const categories = [
     ), 
     filter: "Energy", 
     limit: null, 
-    color: "from-yellow-500 to-orange-500" 
+    color: "from-amber-700 to-amber-500" 
   },
   { 
     name: "Healthcare", 
@@ -56,7 +56,7 @@ const categories = [
     ), 
     filter: "Healthcare", 
     limit: null, 
-    color: "from-red-400 to-pink-500" 
+    color: "from-rose-600 to-rose-400" 
   },
   { 
     name: "Automotive", 
@@ -67,7 +67,7 @@ const categories = [
     ), 
     filter: "Automotive", 
     limit: null, 
-    color: "from-indigo-500 to-purple-500" 
+    color: "from-indigo-600 to-indigo-400" 
   },
   { 
     name: "All Stocks", 
@@ -78,7 +78,7 @@ const categories = [
     ), 
     filter: "", 
     limit: null, 
-    color: "from-gray-600 to-gray-800" 
+    color: "from-slate-800 to-slate-600" 
   },
 ];
 
