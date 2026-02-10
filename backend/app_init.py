@@ -18,6 +18,13 @@ from utils.performance_utils import configure_logging, metrics
 
 load_dotenv()
 
+# ========== FRONTEND CONFIGURATION ==========
+# Centralized frontend URL for redirects and CORS
+FRONTEND_URL = os.environ.get(
+    "FRONTEND_URL",
+    "http://localhost:5173"  # Local development default
+)
+
 # Setup optimized logging
 configure_logging(
     level=logging.INFO,
@@ -29,18 +36,25 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey_change_in_production")
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SECURE'] = True  # Required for cross-origin cookies
-app.config['SESSION_COOKIE_SAMESITE'] = 'None'  # Required for cross-origin cookies
+
+# Detect local development vs production for cookie settings.
+# In local development (http://localhost:*), browsers will IGNORE cookies
+# that are marked `Secure` and `SameSite=None`, which breaks Google OAuth
+# because the session cookie is never stored.
+is_local_frontend = FRONTEND_URL.startswith("http://localhost")
+
+if is_local_frontend:
+    # Local dev: allow http cookies so Google OAuth works on localhost.
+    app.config['SESSION_COOKIE_SECURE'] = False
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+else:
+    # Production: strict, cross-site compatible cookies for OAuth.
+    app.config['SESSION_COOKIE_SECURE'] = True   # Requires HTTPS
+    app.config['SESSION_COOKIE_SAMESITE'] = 'None'  # Required for cross-origin cookies
+
 app.config['SESSION_COOKIE_DOMAIN'] = None
 app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400 * 7  # 7 days in seconds
-
-# ========== FRONTEND CONFIGURATION ==========
-# Centralized frontend URL for redirects and CORS
-FRONTEND_URL = os.environ.get(
-    "FRONTEND_URL",
-    "http://localhost:5173"  # Local development default
-)
 
 # CORS allowed origins - production and local development
 ALLOWED_ORIGINS = [
