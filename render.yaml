@@ -23,6 +23,9 @@ services:
       - key: PYTHON_VERSION
         value: "3.11"
       
+      - key: STOCKS_DB_PATH
+        value: "/tmp/stocks.db"
+      
       - key: FLASK_ENV
         value: "production"
       
