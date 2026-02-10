@@ -2,26 +2,9 @@ import { io } from "socket.io-client";
 
 let socket;
 
-const normalizeBaseUrl = (value) => {
-  if (!value) return value;
-  return value.trim().replace(/\/+$/, "");
-};
-
-const stripApiSuffix = (value) => {
-  if (!value) return value;
-  return value.replace(/\/api\/?$/i, "");
-};
-
 const getSocketUrl = () => {
-  const explicitSocketUrl = normalizeBaseUrl(import.meta.env.VITE_SOCKET_URL);
-  if (explicitSocketUrl) return explicitSocketUrl;
-
-  const apiUrl = normalizeBaseUrl(import.meta.env.VITE_API_URL);
-  if (apiUrl) {
-    return stripApiSuffix(apiUrl);
-  }
-
-  return undefined;
+  const baseUrl = import.meta.env.VITE_API_URL;
+  return baseUrl && baseUrl.trim().length > 0 ? baseUrl : undefined;
 };
 
 export const getStockSocket = () => {
