@@ -1,16 +1,8 @@
-try:
-    import eventlet
-    eventlet.monkey_patch()
-    ASYNC_MODE = "eventlet"
-except Exception:
-    ASYNC_MODE = "threading"
-
 from flask import Flask, request
 from flask_cors import CORS
 import logging
 from dotenv import load_dotenv
 import threading
-from flask_socketio import SocketIO
 from services.app import StockSearchApp
 from core.bm25_stock_ranker import create_ranker
 from utils.stock_tokenizer import stock_tokenizer, query_tokenizer
@@ -23,7 +15,6 @@ import os
 from utils.cache_manager import start_cache_cleanup_thread
 from routes.optimized_routes import register_optimized_routes
 from utils.performance_utils import configure_logging, metrics
-from services.stock_streamer import register_stock_streaming
 
 load_dotenv()
 
@@ -82,14 +73,6 @@ CORS(
         "origins": ALLOWED_ORIGINS
     }},
     supports_credentials=True
-)
-
-socketio = SocketIO(
-    app,
-    cors_allowed_origins=ALLOWED_ORIGINS,
-    async_mode=ASYNC_MODE,
-    ping_interval=25,
-    ping_timeout=60
 )
 
 
@@ -160,9 +143,6 @@ start_cache_cleanup_thread(interval=60)
 # Register optimized API routes (/api/v2/*)
 register_optimized_routes(app)
 
-# Register WebSocket handlers
-register_stock_streaming(socketio)
-
 # App startup: load dataset and build search index lazily before first request
 @app.before_request
 def initialize_app():
@@ -186,4 +166,4 @@ def initialize_app():
             logger.exception("Failed to initialize application")
 
 
-__all__ = ["app", "logger", "stock_app", "stock_ranker", "socketio"]
+__all__ = ["app", "logger", "stock_app", "stock_ranker"]

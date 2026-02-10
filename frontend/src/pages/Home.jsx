@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import QuerySearch from "../components/QuerySearch";
-import { getStockSocket, subscribeSymbols, unsubscribeSymbols } from "../services/stockSocket";
 
 const Home = ({ username, onLogout, onNavigateToSearch }) => {
   const [stocks, setStocks] = useState([]);
@@ -10,8 +9,6 @@ const Home = ({ username, onLogout, onNavigateToSearch }) => {
   const [selectedStock, setSelectedStock] = useState(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const navigate = useNavigate();
-  const subscribedSymbolsRef = useRef([]);
-  const changeTimersRef = useRef({});
 
   
 // Categories for the boxes - matching actual database sectors
@@ -85,82 +82,20 @@ const categories = [
   },
 ];
 
-  // Fetch initial stocks and subscribe for live updates
+  // Fetch stocks for ticker
   useEffect(() => {
-    let isMounted = true;
-    const socket = getStockSocket();
-
-    const clearChangeTimer = (symbol) => {
-      const timer = changeTimersRef.current[symbol];
-      if (timer) {
-        clearTimeout(timer);
-      }
-      changeTimersRef.current[symbol] = setTimeout(() => {
-        setStocks((prev) =>
-          prev.map((s) => (s.symbol === symbol ? { ...s, changed: null } : s))
-        );
-        delete changeTimersRef.current[symbol];
-      }, 1500);
-    };
-
-    const handleUpdate = (payload) => {
-      if (!payload?.symbol) return;
-      setStocks((prev) =>
-        prev.map((stock) => {
-          if (stock.symbol !== payload.symbol) return stock;
-          const prevPrice = stock.price;
-          const nextPrice = payload.price ?? stock.price;
-          let changed = null;
-          if (prevPrice != null && nextPrice != null && prevPrice !== nextPrice) {
-            changed = nextPrice > prevPrice ? "up" : "down";
-          }
-          if (changed) {
-            clearChangeTimer(stock.symbol);
-          }
-          return {
-            ...stock,
-            price: nextPrice,
-            change_percent: payload.change_percent ?? stock.change_percent,
-            last_updated: payload.last_updated ?? stock.last_updated,
-            changed,
-          };
-        })
-      );
-    };
-
     const fetchStocks = async () => {
       try {
         const res = await api.get("/api/stocks", { params: { limit: 50 } });
-        if (!isMounted) return;
         setStocks(res.data);
-        const symbols = (res.data || []).map((s) => s.symbol).filter(Boolean);
-        subscribedSymbolsRef.current = symbols;
-        subscribeSymbols(symbols, { interval: 10 });
       } catch (err) {
         console.error("Error fetching stocks:", err);
       }
     };
 
-    const handleConnect = () => {
-      if (subscribedSymbolsRef.current.length > 0) {
-        subscribeSymbols(subscribedSymbolsRef.current, { interval: 10 });
-      }
-    };
-
-    socket.on("stock_update", handleUpdate);
-    socket.on("connect", handleConnect);
     fetchStocks();
-
-    return () => {
-      isMounted = false;
-      socket.off("stock_update", handleUpdate);
-      socket.off("connect", handleConnect);
-      if (subscribedSymbolsRef.current.length > 0) {
-        unsubscribeSymbols(subscribedSymbolsRef.current);
-      }
-      Object.values(changeTimersRef.current).forEach(clearTimeout);
-      changeTimersRef.current = {};
-    };
+    const interval = setInterval(fetchStocks, 10000); // Update every 10 seconds
+    return () => clearInterval(interval);
   }, []);
 
   const handleSearch = (e) => {
@@ -291,16 +226,7 @@ const categories = [
         <div className="ticker-wrapper">
           <div className="ticker-content">
             {stocks.concat(stocks).map((stock, index) => (
-              <div
-                key={`${stock.symbol}-${index}`}
-                className={`ticker-item group hover:bg-gray-800/50 transition-all duration-200 px-6 py-2 rounded-lg ${
-                  stock.changed === "up"
-                    ? "ring-1 ring-emerald-400/40 shadow-[0_0_18px_rgba(16,185,129,0.35)]"
-                    : stock.changed === "down"
-                    ? "ring-1 ring-red-400/40 shadow-[0_0_18px_rgba(239,68,68,0.35)]"
-                    : ""
-                }`}
-              >
+              <div key={`${stock.symbol}-${index}`} className="ticker-item group hover:bg-gray-800/50 transition-all duration-200 px-6 py-2 rounded-lg">
                 <span className="font-bold text-cyan-300 group-hover:text-cyan-200 transition-colors">{stock.symbol}</span>
                 <span className="mx-3 text-gray-300 group-hover:text-white transition-colors">${stock.price?.toFixed(2)}</span>
                 <span
