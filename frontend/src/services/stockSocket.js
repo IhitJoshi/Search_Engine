@@ -10,14 +10,8 @@ const getSocketUrl = () => {
 export const getStockSocket = () => {
   if (!socket) {
     socket = io(getSocketUrl(), {
-      withCredentials: false,
-      transports: ["polling", "websocket"],
-      upgrade: true,
-      timeout: 10000,
-      reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
+      withCredentials: true,
+      transports: ["websocket", "polling"],
     });
   }
   return socket;

@@ -66,35 +66,27 @@ app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400 * 7  # 7 days in seconds
 
 # CORS allowed origins - production and local development
-EXTRA_ALLOWED_ORIGINS = [
-    origin.strip()
-    for origin in os.environ.get("EXTRA_ALLOWED_ORIGINS", "").split(",")
-    if origin.strip()
-]
-
 ALLOWED_ORIGINS = [
     FRONTEND_URL,  # Primary frontend URL
     "https://stock-engine.vercel.app",
     "https://stock-engine-git-main-ihit-joshis-projects.vercel.app",
     "http://localhost:5173",
     "http://localhost:5174",
-    "http://localhost:5175",
-    *EXTRA_ALLOWED_ORIGINS
+    "http://localhost:5175"
 ]
 
 # CORS configuration
 CORS(
     app,
     resources={r"/api/*": {
-        "origins": ALLOWED_ORIGINS + [r"^https://.*\.vercel\.app$"]
+        "origins": ALLOWED_ORIGINS
     }},
     supports_credentials=True
 )
 
 socketio = SocketIO(
     app,
-    cors_allowed_origins="*",
-    cors_credentials=False,
+    cors_allowed_origins=ALLOWED_ORIGINS,
     async_mode=ASYNC_MODE,
     ping_interval=25,
     ping_timeout=60
