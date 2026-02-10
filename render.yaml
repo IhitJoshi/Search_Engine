@@ -13,7 +13,7 @@ services:
     # Start command - run Flask with gunicorn from backend directory
     startCommand: |
       cd backend && \
-      gunicorn -w 1 -b 0.0.0.0:$PORT -t 120 api:app
+      gunicorn -k eventlet -w 1 -b 0.0.0.0:$PORT -t 120 api:app
     
     # Root directory is the repo root (not backend specifically)
     rootDir: .
