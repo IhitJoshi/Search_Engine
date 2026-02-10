@@ -31,6 +31,9 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey_change_in_pr
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = True  # Required for cross-origin cookies
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'  # Required for cross-origin cookies
+app.config['SESSION_COOKIE_DOMAIN'] = None
+app.config['SESSION_PERMANENT'] = True
+app.config['PERMANENT_SESSION_LIFETIME'] = 86400 * 7  # 7 days in seconds
 
 # ========== FRONTEND CONFIGURATION ==========
 # Centralized frontend URL for redirects and CORS

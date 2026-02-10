@@ -79,6 +79,7 @@ def login():
 
         if user:
             from flask import session
+            session.permanent = True  # Make session persist across browser restarts
             session['username'] = user['username']
             session['email'] = user['email']
 
@@ -423,6 +424,7 @@ def google_callback():
                 logger.info(f"New Google user created: {email}")
         
         # Set session
+        session.permanent = True  # Make session persist across browser restarts
         session['username'] = username
         session['email'] = user_email
         
