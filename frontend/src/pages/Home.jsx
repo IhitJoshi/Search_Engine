@@ -11,14 +11,75 @@ const Home = ({ username, onLogout, onNavigateToSearch }) => {
   const navigate = useNavigate();
 
   // Categories for the boxes - matching actual database sectors
-  const categories = [
-    { name: "Technology", icon: "🚀", filter: "Technology", limit: null, color: "from-cyan-500 to-blue-600" },
-    { name: "Finance", icon: "📊", filter: "Financial Services", limit: null, color: "from-emerald-500 to-green-600" },
-    { name: "Energy", icon: "⚡", filter: "Energy", limit: null, color: "from-amber-500 to-orange-600" },
-    { name: "Healthcare", icon: "🏥", filter: "Healthcare", limit: null, color: "from-rose-500 to-pink-600" },
-    { name: "Automotive", icon: "🚗", filter: "Automotive", limit: null, color: "from-violet-500 to-purple-600" },
-    { name: "All Stocks", icon: "📈", filter: "", limit: null, color: "from-indigo-500 to-purple-600" },
-  ];
+  // Categories for the boxes - matching actual database sectors
+const categories = [
+  { 
+    name: "Technology", 
+    icon: (
+      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+      </svg>
+    ), 
+    filter: "Technology", 
+    limit: null, 
+    color: "from-cyan-500 to-blue-600" 
+  },
+  { 
+    name: "Finance", 
+    icon: (
+      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ), 
+    filter: "Financial Services", 
+    limit: null, 
+    color: "from-emerald-500 to-green-600" 
+  },
+  { 
+    name: "Energy", 
+    icon: (
+      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg>
+    ), 
+    filter: "Energy", 
+    limit: null, 
+    color: "from-amber-500 to-orange-600" 
+  },
+  { 
+    name: "Healthcare", 
+    icon: (
+      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+      </svg>
+    ), 
+    filter: "Healthcare", 
+    limit: null, 
+    color: "from-rose-500 to-pink-600" 
+  },
+  { 
+    name: "Automotive", 
+    icon: (
+      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+      </svg>
+    ), 
+    filter: "Automotive", 
+    limit: null, 
+    color: "from-violet-500 to-purple-600" 
+  },
+  { 
+    name: "All Stocks", 
+    icon: (
+      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+      </svg>
+    ), 
+    filter: "", 
+    limit: null, 
+    color: "from-indigo-500 to-purple-600" 
+  },
+];
 
   // Fetch stocks for ticker
   useEffect(() => {
