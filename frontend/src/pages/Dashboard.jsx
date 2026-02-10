@@ -55,6 +55,15 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
     return filtered.slice(0, limitValue);
   }, [allStocks, stockLimit]);
 
+  const getTrendIntent = useCallback((queryText) => {
+    const q = (queryText || "").toLowerCase();
+    const upKeywords = ["up", "increase", "increasing", "growing", "gain", "gains", "rising", "positive", "gainers", "green"];
+    const downKeywords = ["down", "decrease", "decreasing", "fall", "falling", "drop", "loss", "decline", "negative", "losers", "red"];
+    if (upKeywords.some((k) => q.includes(k))) return "up";
+    if (downKeywords.some((k) => q.includes(k))) return "down";
+    return "";
+  }, []);
+
   // Live stocks: initial fetch + WebSocket updates
   useEffect(() => {
     let isMounted = true;
@@ -181,6 +190,22 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
           setDisplayedStocks([]);
           setMessage({ text: "No results found.", type: "info" });
         }
+        setIsLoading(false);
+        return;
+      }
+
+      // Trend-only queries like "all increasing", "gainers", "stocks going down"
+      const trendIntent = getTrendIntent(query);
+      if (trendIntent && allStocks.length > 0 && !sectorFilter) {
+        const filtered = allStocks.filter((s) => {
+          const change = s.change_percent ?? 0;
+          return trendIntent === "up" ? change > 0 : change < 0;
+        });
+        const limitValue = stockLimit ?? filtered.length;
+        const limited = filtered.slice(0, limitValue);
+        setDisplayedStocks(limited);
+        setStats({ total: limited.length, time: 0, query });
+        setMessage({ text: limited.length ? "Showing live results" : "No results found.", type: limited.length ? "success" : "info" });
         setIsLoading(false);
         return;
       }

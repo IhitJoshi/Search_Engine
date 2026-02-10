@@ -14,6 +14,35 @@ const QuerySearch = () => {
   const [searchMode, setSearchMode] = useState("live"); // live | ai
   const [lastAiQuery, setLastAiQuery] = useState("");
 
+  const normalizeAiResults = useCallback((payload) => {
+    if (!payload) return [];
+    const rawResults = Array.isArray(payload.results) ? payload.results : [];
+    return rawResults.map((item) => {
+      if (!item || typeof item !== "object") return item;
+      const metrics = item.metrics || {};
+      const companyName = item.company_name || item.name || item.company || item.symbol;
+      const changePercent =
+        metrics.change_percent ??
+        item.change_percent ??
+        item.changePercent ??
+        null;
+      return {
+        symbol: item.symbol,
+        company_name: companyName,
+        sector: item.sector || metrics.sector,
+        price: metrics.price ?? item.price ?? null,
+        volume: metrics.volume ?? item.volume ?? null,
+        average_volume: metrics.average_volume ?? item.average_volume ?? null,
+        market_cap: metrics.market_cap ?? item.market_cap ?? null,
+        change_percent: changePercent,
+        last_updated: metrics.last_updated ?? item.last_updated ?? null,
+        changed: changePercent == null ? null : changePercent > 0 ? "up" : changePercent < 0 ? "down" : null,
+        reasons: item.reasons || [],
+        score: item.score ?? item._score ?? null,
+      };
+    });
+  }, []);
+
   const filterLiveStocks = useCallback((queryText) => {
     const q = (queryText || "").toLowerCase().trim();
     if (!q) return [];
@@ -60,9 +89,11 @@ const QuerySearch = () => {
     try {
       const res = await api.post("/api/ai_search", {
         query: q,
+        limit: 50,
       });
-      if (res.data.results && res.data.results.length > 0) {
-        setResults(res.data.results);
+      const normalized = normalizeAiResults(res.data);
+      if (normalized.length > 0) {
+        setResults(normalized);
         setSummary(res.data.summary || "");
       } else {
         setResults([]);
