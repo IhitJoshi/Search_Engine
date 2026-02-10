@@ -1,6 +1,8 @@
 # Web Framework
 Flask>=3.0.0,<4.0.0
 Flask-CORS>=4.0.0,<5.0.0
+Flask-SocketIO>=5.3.6,<6.0.0
+eventlet>=0.36.1,<1.0.0
 
 # Environment Configuration
 python-dotenv>=1.0.0,<2.0.0

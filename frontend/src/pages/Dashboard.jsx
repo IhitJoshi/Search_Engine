@@ -3,12 +3,12 @@ import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import StockCard from "../components/StockCard";
 import StockDetails from "../components/StockDetails";
+import { getStockSocket, subscribeSymbols, unsubscribeSymbols } from "../services/stockSocket";
 
 const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", stockLimit = null, onBackToHome }) => {
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [displayedStocks, setDisplayedStocks] = useState([]);
   const [allStocks, setAllStocks] = useState([]);
-  const [previousStocks, setPreviousStocks] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [isLiveLoading, setIsLiveLoading] = useState(false);
   const [stats, setStats] = useState({ total: 0, time: 0, query: "" });
@@ -18,6 +18,8 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const navigate = useNavigate();
   const prevPropsRef = useRef({ initialQuery: "", sectorFilter: "", stockLimit: null });
+  const subscribedSymbolsRef = useRef(new Set());
+  const changeTimersRef = useRef({});
   const normalizeResults = useCallback((results = []) => {
     if (!Array.isArray(results)) return [];
     return results.map((r) => {
@@ -53,9 +55,9 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
     return filtered.slice(0, limitValue);
   }, [allStocks, stockLimit]);
 
-  // 🟢 Fetch stocks initially and every 10 seconds
+  // Live stocks: initial fetch + WebSocket updates
   useEffect(() => {
-    let previousStocksCache = {};
+    let isMounted = true;
 
     const fetchStocks = async () => {
       try {
@@ -63,22 +65,16 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
         const res = await api.get("/api/stocks");
         const data = res.data;
 
-        // Detect price changes for animation
-        const updated = data.map((stock) => {
-          const prev = previousStocksCache[stock.symbol];
-          const changed =
-            prev && prev.price !== stock.price
-              ? stock.price > prev.price
-                ? "up"
-                : "down"
-              : null;
-          return { ...stock, changed };
-        });
-
-        setAllStocks(updated);
-        previousStocksCache = Object.fromEntries(data.map((s) => [s.symbol, s]));
-        setPreviousStocks(previousStocksCache);
+        if (!isMounted) return;
+        setAllStocks(data);
         setLastUpdated(new Date().toLocaleTimeString());
+
+        const symbols = (data || []).map((s) => s.symbol).filter(Boolean);
+        const newSymbols = symbols.filter((s) => !subscribedSymbolsRef.current.has(s));
+        if (newSymbols.length > 0) {
+          subscribeSymbols(newSymbols, { interval: 10 });
+          newSymbols.forEach((s) => subscribedSymbolsRef.current.add(s));
+        }
       } catch (err) {
         console.error("Error fetching stocks:", err);
       } finally {
@@ -87,8 +83,70 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
     };
 
     fetchStocks();
-    const interval = setInterval(fetchStocks, 10000);
-    return () => clearInterval(interval);
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const socket = getStockSocket();
+
+    const clearChangeTimer = (symbol) => {
+      const timer = changeTimersRef.current[symbol];
+      if (timer) {
+        clearTimeout(timer);
+      }
+      changeTimersRef.current[symbol] = setTimeout(() => {
+        setAllStocks((prev) =>
+          prev.map((s) => (s.symbol === symbol ? { ...s, changed: null } : s))
+        );
+        delete changeTimersRef.current[symbol];
+      }, 1500);
+    };
+
+    const handleUpdate = (payload) => {
+      if (!payload?.symbol) return;
+      setAllStocks((prev) =>
+        prev.map((stock) => {
+          if (stock.symbol !== payload.symbol) return stock;
+          const prevPrice = stock.price;
+          const nextPrice = payload.price ?? stock.price;
+          let changed = null;
+          if (prevPrice != null && nextPrice != null && prevPrice !== nextPrice) {
+            changed = nextPrice > prevPrice ? "up" : "down";
+          }
+          if (changed) {
+            clearChangeTimer(stock.symbol);
+          }
+          return {
+            ...stock,
+            price: nextPrice,
+            change_percent: payload.change_percent ?? stock.change_percent,
+            last_updated: payload.last_updated ?? stock.last_updated,
+            changed,
+          };
+        })
+      );
+      setLastUpdated(new Date().toLocaleTimeString());
+    };
+
+    socket.on("stock_update", handleUpdate);
+    const handleConnect = () => {
+      if (subscribedSymbolsRef.current.size > 0) {
+        subscribeSymbols(Array.from(subscribedSymbolsRef.current), { interval: 10 });
+      }
+    };
+    socket.on("connect", handleConnect);
+
+    return () => {
+      socket.off("stock_update", handleUpdate);
+      socket.off("connect", handleConnect);
+      if (subscribedSymbolsRef.current.size > 0) {
+        unsubscribeSymbols(Array.from(subscribedSymbolsRef.current));
+      }
+      Object.values(changeTimersRef.current).forEach(clearTimeout);
+      changeTimersRef.current = {};
+    };
   }, []);
 
   // 🔍 Perform search - memoized to prevent infinite loops
