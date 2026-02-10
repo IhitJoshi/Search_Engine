@@ -12,6 +12,7 @@ const Home = ({ username, onLogout, onNavigateToSearch }) => {
 
   // Categories for the boxes - matching actual database sectors
   // Categories for the boxes - matching actual database sectors
+// Categories for the boxes - matching actual database sectors
 const categories = [
   { 
     name: "Technology", 
@@ -22,7 +23,7 @@ const categories = [
     ), 
     filter: "Technology", 
     limit: null, 
-    color: "from-cyan-500 to-blue-600" 
+    color: "from-blue-500 to-cyan-500" 
   },
   { 
     name: "Finance", 
@@ -33,7 +34,7 @@ const categories = [
     ), 
     filter: "Financial Services", 
     limit: null, 
-    color: "from-emerald-500 to-green-600" 
+    color: "from-emerald-500 to-green-400" 
   },
   { 
     name: "Energy", 
@@ -44,7 +45,7 @@ const categories = [
     ), 
     filter: "Energy", 
     limit: null, 
-    color: "from-amber-500 to-orange-600" 
+    color: "from-yellow-500 to-orange-500" 
   },
   { 
     name: "Healthcare", 
@@ -55,7 +56,7 @@ const categories = [
     ), 
     filter: "Healthcare", 
     limit: null, 
-    color: "from-rose-500 to-pink-600" 
+    color: "from-red-400 to-pink-500" 
   },
   { 
     name: "Automotive", 
@@ -66,7 +67,7 @@ const categories = [
     ), 
     filter: "Automotive", 
     limit: null, 
-    color: "from-violet-500 to-purple-600" 
+    color: "from-indigo-500 to-purple-500" 
   },
   { 
     name: "All Stocks", 
@@ -77,7 +78,7 @@ const categories = [
     ), 
     filter: "", 
     limit: null, 
-    color: "from-indigo-500 to-purple-600" 
+    color: "from-gray-600 to-gray-800" 
   },
 ];
 
