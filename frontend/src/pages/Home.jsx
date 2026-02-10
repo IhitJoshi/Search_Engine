@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import QuerySearch from "../components/QuerySearch";
+import { getStockSocket, subscribeSymbols, unsubscribeSymbols } from "../services/stockSocket";
 
 const Home = ({ username, onLogout, onNavigateToSearch }) => {
   const [stocks, setStocks] = useState([]);
@@ -9,6 +10,8 @@ const Home = ({ username, onLogout, onNavigateToSearch }) => {
   const [selectedStock, setSelectedStock] = useState(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const navigate = useNavigate();
+  const subscribedSymbolsRef = useRef(new Set());
+  const changeTimersRef = useRef({});
 
   
 // Categories for the boxes - matching actual database sectors
@@ -82,20 +85,88 @@ const categories = [
   },
 ];
 
-  // Fetch stocks for ticker
+  // Fetch stocks for ticker and subscribe for live updates
   useEffect(() => {
+    let isMounted = true;
+    const socket = getStockSocket();
+
     const fetchStocks = async () => {
       try {
         const res = await api.get("/api/stocks", { params: { limit: 50 } });
-        setStocks(res.data);
+        if (!isMounted) return;
+        const data = Array.isArray(res.data) ? res.data : [];
+        setStocks(data.map((s) => ({ ...s, changed: null })));
+
+        const symbols = data.map((s) => s.symbol).filter(Boolean);
+        const newSymbols = symbols.filter((s) => !subscribedSymbolsRef.current.has(s));
+        if (newSymbols.length > 0) {
+          subscribeSymbols(newSymbols, { interval: 10 });
+          newSymbols.forEach((s) => subscribedSymbolsRef.current.add(s));
+        }
       } catch (err) {
         console.error("Error fetching stocks:", err);
       }
     };
 
     fetchStocks();
-    const interval = setInterval(fetchStocks, 10000); // Update every 10 seconds
-    return () => clearInterval(interval);
+
+    const clearChangeTimer = (symbol) => {
+      const timer = changeTimersRef.current[symbol];
+      if (timer) {
+        clearTimeout(timer);
+      }
+      changeTimersRef.current[symbol] = setTimeout(() => {
+        setStocks((prev) =>
+          prev.map((s) => (s.symbol === symbol ? { ...s, changed: null } : s))
+        );
+        delete changeTimersRef.current[symbol];
+      }, 1500);
+    };
+
+    const handleUpdate = (payload) => {
+      if (!payload?.symbol) return;
+      setStocks((prev) =>
+        prev.map((stock) => {
+          if (stock.symbol !== payload.symbol) return stock;
+          const prevPrice = stock.price;
+          const nextPrice = payload.price ?? stock.price;
+          let changed = null;
+          if (prevPrice != null && nextPrice != null && prevPrice !== nextPrice) {
+            changed = nextPrice > prevPrice ? "up" : "down";
+          }
+          if (changed) {
+            clearChangeTimer(stock.symbol);
+          }
+          return {
+            ...stock,
+            price: nextPrice,
+            change_percent: payload.change_percent ?? stock.change_percent,
+            last_updated: payload.last_updated ?? stock.last_updated,
+            changed,
+          };
+        })
+      );
+    };
+
+    const handleConnect = () => {
+      if (subscribedSymbolsRef.current.size > 0) {
+        subscribeSymbols(Array.from(subscribedSymbolsRef.current), { interval: 10 });
+      }
+    };
+
+    socket.on("stock_update", handleUpdate);
+    socket.on("connect", handleConnect);
+
+    return () => {
+      isMounted = false;
+      socket.off("stock_update", handleUpdate);
+      socket.off("connect", handleConnect);
+      if (subscribedSymbolsRef.current.size > 0) {
+        unsubscribeSymbols(Array.from(subscribedSymbolsRef.current));
+      }
+      Object.values(changeTimersRef.current).forEach(clearTimeout);
+      changeTimersRef.current = {};
+    };
   }, []);
 
   const handleSearch = (e) => {
@@ -226,7 +297,16 @@ const categories = [
         <div className="ticker-wrapper">
           <div className="ticker-content">
             {stocks.concat(stocks).map((stock, index) => (
-              <div key={`${stock.symbol}-${index}`} className="ticker-item group hover:bg-gray-800/50 transition-all duration-200 px-6 py-2 rounded-lg">
+              <div
+                key={`${stock.symbol}-${index}`}
+                className={`ticker-item group hover:bg-gray-800/50 transition-all duration-200 px-6 py-2 rounded-lg ${
+                  stock.changed === "up"
+                    ? "ring-1 ring-emerald-400/40 shadow-[0_0_18px_rgba(16,185,129,0.35)]"
+                    : stock.changed === "down"
+                    ? "ring-1 ring-red-400/40 shadow-[0_0_18px_rgba(239,68,68,0.35)]"
+                    : ""
+                }`}
+              >
                 <span className="font-bold text-cyan-300 group-hover:text-cyan-200 transition-colors">{stock.symbol}</span>
                 <span className="mx-3 text-gray-300 group-hover:text-white transition-colors">${stock.price?.toFixed(2)}</span>
                 <span
