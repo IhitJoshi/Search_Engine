@@ -422,29 +422,51 @@ def google_callback():
                     conn.commit()
             else:
                 # New user - create account
-                username = name or email.split('@')[0]
+                # Use email local-part as base username to avoid collisions when
+                # multiple Google accounts share the same full name.
+                base_username = (email.split('@')[0] or "user").strip()
+                if not base_username:
+                    base_username = "user"
+
                 user_email = email
-                
+
                 columns_to_insert = ["username", "email"]
-                values = [username, user_email]
-                
+
+                # Static columns that don't change across collision retries
+                static_columns = []
+                static_values = []
                 if has_password_hash:
-                    columns_to_insert.append("password_hash")
-                    values.append(None)
+                    static_columns.append("password_hash")
+                    static_values.append(None)
                 if has_google_id and google_id:
-                    columns_to_insert.append("google_id")
-                    values.append(google_id)
+                    static_columns.append("google_id")
+                    static_values.append(google_id)
                 if has_provider:
-                    columns_to_insert.append("provider")
-                    values.append("google")
-                
-                placeholders = ", ".join(["?"] * len(columns_to_insert))
-                cursor.execute(
-                    f"INSERT INTO users ({', '.join(columns_to_insert)}) VALUES ({placeholders})",
-                    tuple(values)
-                )
-                conn.commit()
-                logger.info(f"New Google user created: {email}")
+                    static_columns.append("provider")
+                    static_values.append("google")
+
+                # Try to insert with unique username, appending a numeric suffix on conflict
+                suffix = 0
+                while True:
+                    username = base_username if suffix == 0 else f"{base_username}{suffix}"
+                    try:
+                        cols = columns_to_insert + static_columns
+                        values = [username, user_email] + static_values
+                        placeholders = ", ".join(["?"] * len(cols))
+                        cursor.execute(
+                            f"INSERT INTO users ({', '.join(cols)}) VALUES ({placeholders})",
+                            tuple(values)
+                        )
+                        conn.commit()
+                        logger.info(f"New Google user created: {email} with username {username}")
+                        break
+                    except sqlite3.IntegrityError as e:
+                        # Username collision -> try next suffix
+                        if "username" in str(e):
+                            suffix += 1
+                            continue
+                        # Any other integrity error is unexpected; re-raise
+                        raise
         
         # Set session
         session.permanent = True  # Make session persist across browser restarts
