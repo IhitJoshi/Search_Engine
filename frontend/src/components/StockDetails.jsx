@@ -46,6 +46,19 @@ const StockDetails = ({ symbol, onClose }) => {
       setChartLoading(false);
       return;
     }
+    try {
+      const lsKey = `chart_cache:${symbol}:${range}`;
+      const lsVal = localStorage.getItem(lsKey);
+      if (lsVal) {
+        const parsed = JSON.parse(lsVal);
+        if (Array.isArray(parsed) && parsed.length) {
+          setChartData(parsed);
+          setChartCache((prev) => ({ ...prev, [range]: parsed }));
+          setChartLoading(false);
+          return;
+        }
+      }
+    } catch {}
 
     const fetchChartData = async () => {
       setChartLoading(true);
@@ -55,6 +68,9 @@ const StockDetails = ({ symbol, onClose }) => {
         if (data.chart) {
           setChartData(data.chart);
           setChartCache((prev) => ({ ...prev, [range]: data.chart }));
+          try {
+            localStorage.setItem(`chart_cache:${symbol}:${range}`, JSON.stringify(data.chart));
+          } catch {}
         }
         if ((data.pending && (!data.chart || data.chart.length === 0)) && !retryRef.current[`${symbol}:${range}`]) {
           retryRef.current[`${symbol}:${range}`] = true;

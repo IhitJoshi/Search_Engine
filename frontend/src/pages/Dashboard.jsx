@@ -37,6 +37,11 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
       .filter(Boolean)
       .join(",")
   ), [displayedStocks]);
+  const categoryCacheKey = useMemo(() => {
+    const base = sectorFilter || initialQuery || "all";
+    const limit = stockLimit ?? "all";
+    return `category_stocks:${base}:${limit}`;
+  }, [sectorFilter, initialQuery, stockLimit]);
   const normalizeResults = useCallback((results = []) => {
     if (!Array.isArray(results)) return [];
     return results.map((r) => {
@@ -165,6 +170,9 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
       setDisplayedStocks(data);
       setStats({ total: data.length, time: 0, query: sectorFilter || initialQuery || "All Stocks" });
       setLastUpdated(new Date().toLocaleTimeString());
+      try {
+        localStorage.setItem(categoryCacheKey, JSON.stringify(data));
+      } catch {}
       setLastUpdatedPulse(true);
       if (lastUpdatedTimerRef.current) {
         clearTimeout(lastUpdatedTimerRef.current);
@@ -182,6 +190,16 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
 
   // Fetch stocks initially (category-aware)
   useEffect(() => {
+    try {
+      const cached = localStorage.getItem(categoryCacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length) {
+          setDisplayedStocks(parsed);
+          setStats({ total: parsed.length, time: 0, query: sectorFilter || initialQuery || "All Stocks" });
+        }
+      }
+    } catch {}
     fetchStocks();
     return () => {};
   }, [fetchStocks]);

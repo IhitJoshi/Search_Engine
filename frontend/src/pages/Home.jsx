@@ -1,17 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import QuerySearch from "../components/QuerySearch";
 
 const Home = ({ username, onLogout, onNavigateToSearch }) => {
-  const [stocks, setStocks] = useState(() => {
+  const initialSliderStocks = (() => {
     try {
       const cached = localStorage.getItem("slider_stocks");
       return cached ? JSON.parse(cached) : [];
     } catch {
       return [];
     }
-  });
+  })();
+  const [stocks, setStocks] = useState(initialSliderStocks);
+  const lastNonEmptyStocksRef = useRef(initialSliderStocks);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStock, setSelectedStock] = useState(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -96,6 +98,7 @@ const categories = [
         const res = await api.get("/api/stocks", { params: { limit: 50 } });
         const next = Array.isArray(res.data) ? res.data : [];
         if (next.length > 0) {
+          lastNonEmptyStocksRef.current = next;
           setStocks(next);
           try {
             localStorage.setItem("slider_stocks", JSON.stringify(next));
@@ -238,7 +241,9 @@ const categories = [
         
         <div className="ticker-wrapper">
           <div className="ticker-content">
-            {stocks.concat(stocks).map((stock, index) => (
+            {(stocks.length ? stocks : lastNonEmptyStocksRef.current).concat(
+              stocks.length ? stocks : lastNonEmptyStocksRef.current
+            ).map((stock, index) => (
               <div key={`${stock.symbol}-${index}`} className="ticker-item group hover:bg-gray-800/50 transition-all duration-200 px-6 py-2 rounded-lg">
                 <span className="font-bold text-cyan-300 group-hover:text-cyan-200 transition-colors">{stock.symbol}</span>
                 <span className="mx-3 text-gray-300 group-hover:text-white transition-colors">${stock.price?.toFixed(2)}</span>
