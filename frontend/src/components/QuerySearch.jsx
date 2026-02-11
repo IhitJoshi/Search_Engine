@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useRef, useMemo } from "react";
 import api from "../services/api";
 import StockCard from "./StockCard";
 import StockDetails from "./StockDetails"; // 👈 import your detailed modal
@@ -13,6 +13,14 @@ const QuerySearch = () => {
   const [isLiveLoading, setIsLiveLoading] = useState(false);
   const [searchMode, setSearchMode] = useState("live"); // live | ai
   const [lastAiQuery, setLastAiQuery] = useState("");
+  const wsRef = useRef(null);
+  const prevPricesRef = useRef({});
+  const visibleSymbolsKey = useMemo(() => (
+    results
+      .map((s) => s.symbol)
+      .filter(Boolean)
+      .join(",")
+  ), [results]);
 
   const filterLiveStocks = useCallback((queryText) => {
     const q = (queryText || "").toLowerCase().trim();
@@ -32,6 +40,9 @@ const QuerySearch = () => {
         const res = await api.get("/api/stocks");
         if (isMounted) {
           setAllStocks(Array.isArray(res.data) ? res.data : []);
+          prevPricesRef.current = Object.fromEntries(
+            (Array.isArray(res.data) ? res.data : []).map((s) => [s.symbol, { price: s.price }])
+          );
         }
       } catch (err) {
         console.error("Error fetching live stocks:", err);
@@ -40,12 +51,84 @@ const QuerySearch = () => {
       }
     };
     fetchStocks();
-    const interval = setInterval(fetchStocks, 10000);
     return () => {
       isMounted = false;
-      clearInterval(interval);
     };
   }, []);
+
+  const buildWsUrl = useCallback(() => {
+    const base = import.meta.env.VITE_API_URL || window.location.origin;
+    const trimmed = base.endsWith("/") ? base.slice(0, -1) : base;
+    return trimmed.replace(/^http/, "ws") + "/ws/stocks";
+  }, []);
+
+  const applyPriceUpdates = useCallback((updates) => {
+    const updatesMap = {};
+    for (const stock of updates) {
+      if (stock?.symbol) updatesMap[stock.symbol] = stock;
+    }
+
+    const prevPrices = { ...prevPricesRef.current };
+
+    const applyToList = (list) => list.map((stock) => {
+      const update = updatesMap[stock.symbol];
+      if (!update) return stock;
+
+      const prevPrice = prevPrices[stock.symbol]?.price ?? stock.price;
+      let changed = null;
+      if (update.price != null && prevPrice != null && update.price !== prevPrice) {
+        changed = update.price > prevPrice ? "up" : "down";
+      }
+      prevPrices[stock.symbol] = { price: update.price };
+      return { ...stock, ...update, changed };
+    });
+
+    setResults((prev) => applyToList(prev));
+    setAllStocks((prev) => applyToList(prev));
+    prevPricesRef.current = prevPrices;
+  }, []);
+
+  // WebSocket live updates for currently visible results
+  useEffect(() => {
+    const symbols = visibleSymbolsKey ? visibleSymbolsKey.split(",") : [];
+
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+
+    if (!symbols.length) {
+      return () => {};
+    }
+
+    const ws = new WebSocket(buildWsUrl());
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ symbols }));
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        const updates = Array.isArray(payload.stocks) ? payload.stocks : [];
+        applyPriceUpdates(updates);
+      } catch (err) {
+        console.error("WebSocket message error:", err);
+      }
+    };
+
+    ws.onerror = (err) => {
+      console.error("WebSocket error:", err);
+    };
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+    };
+  }, [visibleSymbolsKey, buildWsUrl, applyPriceUpdates]);
 
   const runSearch = useCallback(async (queryText) => {
     const q = (queryText || "").trim();

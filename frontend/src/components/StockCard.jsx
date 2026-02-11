@@ -8,9 +8,9 @@ const StockCard = ({ stock }) => {
       <div
         className={`relative h-full rounded-xl p-5 border transition-all duration-300 transform group-hover:-translate-y-1 group-hover:shadow-xl backdrop-blur-sm ${
           stock.changed === "up"
-            ? "bg-gray-800/80 border-emerald-500/40 group-hover:border-emerald-400"
+            ? "bg-gray-800/80 border-emerald-500/40 group-hover:border-emerald-400 ring-1 ring-emerald-400/40 shadow-[0_0_20px_rgba(16,185,129,0.35)] scale-[1.02]"
             : stock.changed === "down"
-            ? "bg-gray-800/80 border-red-500/40 group-hover:border-red-400"
+            ? "bg-gray-800/80 border-red-500/40 group-hover:border-red-400 ring-1 ring-red-400/40 shadow-[0_0_20px_rgba(239,68,68,0.35)] scale-[0.98]"
             : "bg-gray-800/80 border-gray-700 group-hover:border-cyan-500/50"
         }`}
       >

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import StockCard from "../components/StockCard";
@@ -18,6 +18,14 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const navigate = useNavigate();
   const prevPropsRef = useRef({ initialQuery: "", sectorFilter: "", stockLimit: null });
+  const wsRef = useRef(null);
+  const prevPricesRef = useRef({});
+  const visibleSymbolsKey = useMemo(() => (
+    displayedStocks
+      .map((s) => s.symbol)
+      .filter(Boolean)
+      .join(",")
+  ), [displayedStocks]);
   const normalizeResults = useCallback((results = []) => {
     if (!Array.isArray(results)) return [];
     return results.map((r) => {
@@ -53,31 +61,94 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
     return filtered.slice(0, limitValue);
   }, [allStocks, stockLimit]);
 
-  // 🟢 Fetch stocks initially and every 10 seconds
+  const getCategoryType = useCallback((queryText) => {
+    const q = (queryText || "").toLowerCase().trim();
+    if (!q) return "";
+    if (["gainers", "top gainers", "gainer", "top gainer"].includes(q)) return "gainers";
+    if (["losers", "top losers", "loser", "top loser"].includes(q)) return "losers";
+    if (["high volume", "volume leaders", "most active"].includes(q)) return "high_volume";
+    return "";
+  }, []);
+
+  const applyCategoryFilter = useCallback((data, categoryType) => {
+    if (!categoryType) return data;
+    const list = Array.isArray(data) ? data.slice() : [];
+    if (categoryType === "gainers") {
+      return list
+        .filter((s) => (s.change_percent ?? 0) > 0)
+        .sort((a, b) => (b.change_percent ?? 0) - (a.change_percent ?? 0));
+    }
+    if (categoryType === "losers") {
+      return list
+        .filter((s) => (s.change_percent ?? 0) < 0)
+        .sort((a, b) => (a.change_percent ?? 0) - (b.change_percent ?? 0));
+    }
+    if (categoryType === "high_volume") {
+      return list.sort((a, b) => (b.volume ?? 0) - (a.volume ?? 0));
+    }
+    return list;
+  }, []);
+
+  const buildWsUrl = useCallback(() => {
+    const base = import.meta.env.VITE_API_URL || window.location.origin;
+    const trimmed = base.endsWith("/") ? base.slice(0, -1) : base;
+    return trimmed.replace(/^http/, "ws") + "/ws/stocks";
+  }, []);
+
+  const applyPriceUpdates = useCallback((updates, timestamp) => {
+    const updatesMap = {};
+    for (const stock of updates) {
+      if (stock?.symbol) updatesMap[stock.symbol] = stock;
+    }
+
+    const prevPrices = { ...prevPricesRef.current };
+
+    const applyToList = (list) => list.map((stock) => {
+      const update = updatesMap[stock.symbol];
+      if (!update) return stock;
+
+      const prevPrice = prevPrices[stock.symbol]?.price ?? stock.price;
+      let changed = null;
+      if (update.price != null && prevPrice != null && update.price !== prevPrice) {
+        changed = update.price > prevPrice ? "up" : "down";
+      }
+      prevPrices[stock.symbol] = { price: update.price };
+      const nextUpdated = update?.timestamp || timestamp || stock.last_updated;
+      return { ...stock, ...update, last_updated: nextUpdated, changed };
+    });
+
+    setAllStocks((prev) => applyToList(prev));
+    setDisplayedStocks((prev) => applyToList(prev));
+    prevPricesRef.current = prevPrices;
+
+    const ts = timestamp ? new Date(timestamp) : new Date();
+    setLastUpdated(ts.toLocaleTimeString());
+  }, []);
+
+// Fetch stocks initially (category-aware)
   useEffect(() => {
     let previousStocksCache = {};
 
     const fetchStocks = async () => {
       try {
         setIsLiveLoading(true);
-        const res = await api.get("/api/stocks");
-        const data = res.data;
+        const categoryType = getCategoryType(initialQuery);
+        const params = {};
+        if (sectorFilter) params.sector = sectorFilter;
+        if (stockLimit) params.limit = stockLimit;
 
-        // Detect price changes for animation
-        const updated = data.map((stock) => {
-          const prev = previousStocksCache[stock.symbol];
-          const changed =
-            prev && prev.price !== stock.price
-              ? stock.price > prev.price
-                ? "up"
-                : "down"
-              : null;
-          return { ...stock, changed };
-        });
+        const res = await api.get("/api/stocks", { params });
+        let data = Array.isArray(res.data) ? res.data : [];
+        if (!sectorFilter && categoryType) {
+          data = applyCategoryFilter(data, categoryType);
+        }
 
-        setAllStocks(updated);
+        setAllStocks(data);
         previousStocksCache = Object.fromEntries(data.map((s) => [s.symbol, s]));
         setPreviousStocks(previousStocksCache);
+        prevPricesRef.current = Object.fromEntries(data.map((s) => [s.symbol, { price: s.price }]));
+        setDisplayedStocks(data);
+        setStats({ total: data.length, time: 0, query: sectorFilter || initialQuery || "All Stocks" });
         setLastUpdated(new Date().toLocaleTimeString());
       } catch (err) {
         console.error("Error fetching stocks:", err);
@@ -87,9 +158,8 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
     };
 
     fetchStocks();
-    const interval = setInterval(fetchStocks, 10000);
-    return () => clearInterval(interval);
-  }, []);
+    return () => {};
+  }, [sectorFilter, stockLimit, initialQuery, getCategoryType, applyCategoryFilter]);
 
   // 🔍 Perform search - memoized to prevent infinite loops
   const performSearch = useCallback(async (overrideQuery) => {
@@ -232,6 +302,11 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
     
     // Trigger search based on the type of navigation
     const triggerSearch = async () => {
+      const categoryType = getCategoryType(initialQuery);
+      if (categoryType) {
+        setMessage({ text: "Showing live results", type: "success" });
+        return;
+      }
       if (initialQuery && initialQuery.trim()) {
         // Search by query
         await performSearch(initialQuery);
@@ -240,7 +315,7 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
         // Show a loading message while waiting for live data
         setDisplayedStocks([]);
         setStats({ total: 0, time: 0, query: sectorFilter });
-        setMessage({ text: "Loading sector data…", type: "info" });
+        setMessage({ text: "Loading sector data...", type: "info" });
       } else if (!initialQuery && !sectorFilter && allStocks.length > 0) {
         // "All Stocks" - show cached data
         const limitValue = stockLimit ?? allStocks.length;
@@ -251,10 +326,14 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
     };
     
     triggerSearch();
-  }, [initialQuery, sectorFilter, stockLimit]);
+  }, [initialQuery, sectorFilter, stockLimit, getCategoryType, performSearch, allStocks]);
 
   // Live search while typing (instant local filter only)
   useEffect(() => {
+    const categoryType = getCategoryType(initialQuery);
+    if (categoryType && searchQuery.trim() === initialQuery.trim()) {
+      return;
+    }
     const query = searchQuery.trim();
     if (!query && !sectorFilter) {
       if (allStocks.length > 0) {
@@ -275,7 +354,49 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
     }
 
     if (!query) return;
-  }, [searchQuery, sectorFilter, stockLimit, allStocks, filterLiveStocks]);
+  }, [searchQuery, sectorFilter, stockLimit, allStocks, filterLiveStocks, getCategoryType, initialQuery]);
+
+  // WebSocket live updates for currently visible stocks
+  useEffect(() => {
+    const symbols = visibleSymbolsKey ? visibleSymbolsKey.split(",") : [];
+
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+
+    if (!symbols.length) {
+      return () => {};
+    }
+
+    const ws = new WebSocket(buildWsUrl());
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ symbols }));
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        const updates = Array.isArray(payload.stocks) ? payload.stocks : [];
+        applyPriceUpdates(updates, payload.timestamp);
+      } catch (err) {
+        console.error("WebSocket message error:", err);
+      }
+    };
+
+    ws.onerror = (err) => {
+      console.error("WebSocket error:", err);
+    };
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+    };
+  }, [visibleSymbolsKey, buildWsUrl, applyPriceUpdates]);
 
   // When navigating for "All Stocks", update list after allStocks arrives
   useEffect(() => {

@@ -1,5 +1,6 @@
 from flask import Flask, request
 from flask_cors import CORS
+from flask_sock import Sock
 import logging
 from dotenv import load_dotenv
 import threading
@@ -13,6 +14,7 @@ import os
 
 # Import optimization modules
 from utils.cache_manager import start_cache_cleanup_thread
+from utils.price_updater import start_price_cache_updater
 from routes.optimized_routes import register_optimized_routes
 from utils.performance_utils import configure_logging, metrics
 
@@ -36,6 +38,7 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey_change_in_production")
 app.config['SESSION_COOKIE_HTTPONLY'] = True
+sock = Sock(app)
 
 # Detect local development vs production for cookie settings.
 # In local development (http://localhost:*), browsers will IGNORE cookies
@@ -139,6 +142,8 @@ init_db()
 
 # Start cache cleanup thread
 start_cache_cleanup_thread(interval=60)
+# Start price cache updater (every 5 seconds)
+start_price_cache_updater(interval=5)
 
 # Register optimized API routes (/api/v2/*)
 register_optimized_routes(app)
@@ -166,4 +171,4 @@ def initialize_app():
             logger.exception("Failed to initialize application")
 
 
-__all__ = ["app", "logger", "stock_app", "stock_ranker"]
+__all__ = ["app", "sock", "logger", "stock_app", "stock_ranker"]
