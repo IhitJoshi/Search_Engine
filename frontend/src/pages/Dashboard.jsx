@@ -14,12 +14,14 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
   const [stats, setStats] = useState({ total: 0, time: 0, query: "" });
   const [message, setMessage] = useState({ text: "", type: "" });
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [lastUpdatedPulse, setLastUpdatedPulse] = useState(false);
   const [selectedStock, setSelectedStock] = useState(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const navigate = useNavigate();
   const prevPropsRef = useRef({ initialQuery: "", sectorFilter: "", stockLimit: null });
   const wsRef = useRef(null);
   const prevPricesRef = useRef({});
+  const lastUpdatedTimerRef = useRef(null);
   const visibleSymbolsKey = useMemo(() => (
     displayedStocks
       .map((s) => s.symbol)
@@ -123,6 +125,13 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
 
     const ts = timestamp ? new Date(timestamp) : new Date();
     setLastUpdated(ts.toLocaleTimeString());
+    setLastUpdatedPulse(true);
+    if (lastUpdatedTimerRef.current) {
+      clearTimeout(lastUpdatedTimerRef.current);
+    }
+    lastUpdatedTimerRef.current = setTimeout(() => {
+      setLastUpdatedPulse(false);
+    }, 800);
   }, []);
 
 // Fetch stocks initially (category-aware)
@@ -150,6 +159,13 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
         setDisplayedStocks(data);
         setStats({ total: data.length, time: 0, query: sectorFilter || initialQuery || "All Stocks" });
         setLastUpdated(new Date().toLocaleTimeString());
+        setLastUpdatedPulse(true);
+        if (lastUpdatedTimerRef.current) {
+          clearTimeout(lastUpdatedTimerRef.current);
+        }
+        lastUpdatedTimerRef.current = setTimeout(() => {
+          setLastUpdatedPulse(false);
+        }, 800);
       } catch (err) {
         console.error("Error fetching stocks:", err);
       } finally {
@@ -593,7 +609,9 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
               </div>
 
               {lastUpdated && (
-                <div className="px-4 py-2 bg-gray-800/60 backdrop-blur-sm rounded-xl border border-gray-700 text-sm text-gray-400">
+                <div className={`px-4 py-2 bg-gray-800/60 backdrop-blur-sm rounded-xl border text-sm text-gray-400 transition-all duration-300 ${
+                  lastUpdatedPulse ? "border-cyan-400/70 shadow-[0_0_18px_rgba(34,211,238,0.45)]" : "border-gray-700"
+                }`}>
                   Last updated: <span className="font-semibold text-gray-200">{lastUpdated}</span>
                 </div>
               )}

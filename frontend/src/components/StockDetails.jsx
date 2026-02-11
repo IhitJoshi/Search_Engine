@@ -10,6 +10,7 @@ const StockDetails = ({ symbol, onClose }) => {
   const [loading, setLoading] = useState(true);
   const [chartLoading, setChartLoading] = useState(true);
   const [range, setRange] = useState("1D");
+  const [chartCache, setChartCache] = useState({});
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
 
@@ -28,6 +29,8 @@ const StockDetails = ({ symbol, onClose }) => {
       }
     };
 
+    setChartCache({});
+    setChartData([]);
     fetchDetails();
     return () => {
       if (chartInstance.current) chartInstance.current.destroy();
@@ -36,12 +39,22 @@ const StockDetails = ({ symbol, onClose }) => {
 
   // 🟡 Fetch Chart Data based on range
   useEffect(() => {
+    const cached = chartCache[range];
+    if (cached) {
+      setChartData(cached);
+      setChartLoading(false);
+      return;
+    }
+
     const fetchChartData = async () => {
       setChartLoading(true);
       try {
         const res = await api.get(`/api/stocks/${symbol}`, { params: { range } });
         const data = res.data;
-        if (data.chart) setChartData(data.chart);
+        if (data.chart) {
+          setChartData(data.chart);
+          setChartCache((prev) => ({ ...prev, [range]: data.chart }));
+        }
       } catch (err) {
         console.error("Chart fetch error:", err);
       } finally {
@@ -50,7 +63,7 @@ const StockDetails = ({ symbol, onClose }) => {
     };
 
     fetchChartData();
-  }, [symbol, range]);
+  }, [symbol, range, chartCache]);
 
   // 🧠 Draw Chart
   useEffect(() => {
