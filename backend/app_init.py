@@ -1,6 +1,5 @@
 from flask import Flask, request
 from flask_cors import CORS
-from flask_sock import Sock
 import logging
 from dotenv import load_dotenv
 import threading
@@ -38,7 +37,6 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey_change_in_production")
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-sock = Sock(app)
 
 # Detect local development vs production for cookie settings.
 # In local development (http://localhost:*), browsers will IGNORE cookies
@@ -171,4 +169,4 @@ def initialize_app():
             logger.exception("Failed to initialize application")
 
 
-__all__ = ["app", "sock", "logger", "stock_app", "stock_ranker"]
+__all__ = ["app", "logger", "stock_app", "stock_ranker"]
