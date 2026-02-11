@@ -72,13 +72,8 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
         setAllStocks(updated);
         setLastUpdated(new Date().toLocaleTimeString());
 
-        const symbols = (data || []).map((s) => s.symbol).filter(Boolean);
-        const limitedSymbols = symbols.slice(0, 15);
-        const newSymbols = limitedSymbols.filter((s) => !subscribedSymbolsRef.current.has(s));
-        if (newSymbols.length > 0) {
-          subscribeSymbols(newSymbols, { interval: 5 });
-          newSymbols.forEach((s) => subscribedSymbolsRef.current.add(s));
-        }
+        // Do not subscribe here. Subscriptions are managed after render
+        // based on visible stocks in displayedStocks.
       } catch (err) {
         console.error("Error fetching stocks:", err);
       } finally {

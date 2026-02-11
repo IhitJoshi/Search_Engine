@@ -98,12 +98,8 @@ const categories = [
         const data = Array.isArray(res.data) ? res.data : [];
         setStocks(data.map((s) => ({ ...s, changed: null })));
 
-        const symbols = data.map((s) => s.symbol).filter(Boolean).slice(0, 15);
-        const newSymbols = symbols.filter((s) => !subscribedSymbolsRef.current.has(s));
-        if (newSymbols.length > 0) {
-          subscribeSymbols(newSymbols, { interval: 5 });
-          newSymbols.forEach((s) => subscribedSymbolsRef.current.add(s));
-        }
+        // Do not subscribe here. Subscriptions are managed after render
+        // based on visible ticker items in stocks state.
       } catch (err) {
         console.error("Error fetching stocks:", err);
       }

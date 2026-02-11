@@ -143,8 +143,11 @@ def initialize_stock_system():
     try:
         stock_app.initialize_system()
         logger.info("Stock system initialization completed")
-        run_background_fetcher()
-        logger.info("Background fetcher started - fetching all stocks")
+        if os.environ.get("ENABLE_BACKGROUND_FETCHER", "0") == "1":
+            run_background_fetcher()
+            logger.info("Background fetcher started - fetching all stocks")
+        else:
+            logger.info("Background fetcher disabled (ENABLE_BACKGROUND_FETCHER=0)")
     except Exception:
         logger.exception("Stock system initialization failed")
 
