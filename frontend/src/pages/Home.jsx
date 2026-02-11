@@ -4,7 +4,14 @@ import api from "../services/api";
 import QuerySearch from "../components/QuerySearch";
 
 const Home = ({ username, onLogout, onNavigateToSearch }) => {
-  const [stocks, setStocks] = useState([]);
+  const [stocks, setStocks] = useState(() => {
+    try {
+      const cached = localStorage.getItem("slider_stocks");
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStock, setSelectedStock] = useState(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -87,7 +94,13 @@ const categories = [
     const fetchStocks = async () => {
       try {
         const res = await api.get("/api/stocks", { params: { limit: 50 } });
-        setStocks(res.data);
+        const next = Array.isArray(res.data) ? res.data : [];
+        if (next.length > 0) {
+          setStocks(next);
+          try {
+            localStorage.setItem("slider_stocks", JSON.stringify(next));
+          } catch {}
+        }
       } catch (err) {
         console.error("Error fetching stocks:", err);
       }

@@ -345,34 +345,6 @@ class RealTimeStockRanker:
         # Return top_k after soft filtering
         return results[:top_k]
 
-    def rank_tokenized_stocks(
-        self,
-        query: str,
-        tokenized_snapshots: List[Dict[str, Any]],
-        top_k: int = 10
-    ) -> List[Tuple[str, float, Dict[str, Any]]]:
-        """
-        Rank already-tokenized snapshots.
-        Avoids re-tokenizing stocks on every request.
-        """
-        if not tokenized_snapshots:
-            return []
-
-        filtered_snapshots = query_filter_engine.filter_stocks(query, tokenized_snapshots)
-        if not filtered_snapshots:
-            return []
-
-        query_tokens = self.query_tokenizer.tokenize_query(query)
-        if not query_tokens:
-            return []
-
-        results = self.bm25_ranker.rank_stocks(
-            query_tokens=query_tokens,
-            stock_snapshots=filtered_snapshots,
-            top_k=top_k * 3
-        )
-        results = self._apply_soft_filters(query, results)
-        return results[:top_k]
     
     def _apply_soft_filters(
         self,

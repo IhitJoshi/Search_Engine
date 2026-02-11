@@ -5,10 +5,9 @@ from utils.preprocessing import parse_query_filters, normalize_sector
 from core.response_synthesizer import response_synthesizer
 
 # Import optimization modules
-from utils.cache_manager import search_cache, cache_key, tokenized_cache
+from utils.cache_manager import search_cache, cache_key
 from utils.optimized_db import optimized_db
 from utils.optimized_processing import optimized_tokenizer, tokenize_query_cached
-from utils.stock_tokenizer import stock_tokenizer
 from utils.performance_utils import profile_endpoint
 
 
@@ -125,15 +124,7 @@ def search():
             response = response_synthesizer.synthesize_response(query=query or 'all stocks', ranked_results=formatted_for_synthesizer, ranking_method='default', metadata={'sector_filter': effective_sector, 'all_stocks': True} if effective_sector else {'all_stocks': True})
             return jsonify(response)
         elif query:
-            cached_tokenized = tokenized_cache.get("tokenized_snapshots")
-            if not cached_tokenized:
-                cached_tokenized = []
-                for stock in live_stocks:
-                    tokens = stock_tokenizer.tokenize_stock(stock)
-                    cached_tokenized.append({**stock, "tokens": tokens})
-                tokenized_cache.set("tokenized_snapshots", cached_tokenized, ttl=30)
-
-            ranked_results = stock_ranker.rank_tokenized_stocks(query=query, tokenized_snapshots=cached_tokenized, top_k=limit)
+            ranked_results = stock_ranker.rank_live_stocks(query=query, live_stocks=live_stocks, top_k=limit)
 
             if not ranked_results:
                 # Fallback: simple substring match on symbol/company name within filtered stocks
