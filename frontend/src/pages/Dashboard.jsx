@@ -20,17 +20,9 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const navigate = useNavigate();
   const prevPropsRef = useRef({ initialQuery: "", sectorFilter: "", stockLimit: null });
-  const wsRef = useRef(null);
   const prevPricesRef = useRef({});
   const lastUpdatedTimerRef = useRef(null);
-  const wsReconnectTimerRef = useRef(null);
-  const isMountedRef = useRef(true);
-  const lastMessageAtRef = useRef(0);
-  const wsStaleTimerRef = useRef(null);
-  const wsFailedAttemptsRef = useRef(0);
-  const wsOpenedRef = useRef(false);
   const pollingTimerRef = useRef(null);
-  const [usePolling, setUsePolling] = useState(false);
   const visibleSymbolsKey = useMemo(() => (
     displayedStocks
       .map((s) => s.symbol)
@@ -414,107 +406,9 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
     if (!query) return;
   }, [searchQuery, sectorFilter, stockLimit, allStocks, filterLiveStocks, getCategoryType, initialQuery]);
 
-  // WebSocket live updates for currently visible stocks
+  // HTTP-only live updates (every 5s)
   useEffect(() => {
     if (!initialLoadDone) {
-      return () => {};
-    }
-    const symbols = visibleSymbolsKey ? visibleSymbolsKey.split(",") : [];
-
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-    if (wsReconnectTimerRef.current) {
-      clearTimeout(wsReconnectTimerRef.current);
-      wsReconnectTimerRef.current = null;
-    }
-
-    if (!symbols.length) {
-      return () => {};
-    }
-
-    const connect = () => {
-      if (!isMountedRef.current) return;
-      const ws = new WebSocket(buildWsUrl());
-      wsRef.current = ws;
-      wsOpenedRef.current = false;
-
-      ws.onopen = () => {
-        wsOpenedRef.current = true;
-        wsFailedAttemptsRef.current = 0;
-        setUsePolling(false);
-        ws.send(JSON.stringify({ symbols }));
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const payload = JSON.parse(event.data);
-          const updates = Array.isArray(payload.stocks) ? payload.stocks : [];
-          applyPriceUpdates(updates, payload.timestamp);
-          lastMessageAtRef.current = Date.now();
-        } catch (err) {
-          console.error("WebSocket message error:", err);
-        }
-      };
-
-      ws.onerror = (err) => {
-        console.error("WebSocket error:", err);
-        try {
-          ws.close();
-        } catch {}
-      };
-
-      ws.onclose = () => {
-        if (!isMountedRef.current) return;
-        if (!wsOpenedRef.current) {
-          wsFailedAttemptsRef.current += 1;
-          if (wsFailedAttemptsRef.current >= 2) {
-            setUsePolling(true);
-            return;
-          }
-        }
-        wsReconnectTimerRef.current = setTimeout(connect, 2000);
-      };
-    };
-
-    connect();
-
-    if (wsStaleTimerRef.current) {
-      clearInterval(wsStaleTimerRef.current);
-    }
-    wsStaleTimerRef.current = setInterval(() => {
-      const lastMsg = lastMessageAtRef.current;
-      if (lastMsg && Date.now() - lastMsg > 12000) {
-        try {
-          wsRef.current?.close();
-        } catch {}
-      }
-    }, 5000);
-
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-        wsRef.current = null;
-      }
-      if (wsReconnectTimerRef.current) {
-        clearTimeout(wsReconnectTimerRef.current);
-        wsReconnectTimerRef.current = null;
-      }
-      if (wsStaleTimerRef.current) {
-        clearInterval(wsStaleTimerRef.current);
-        wsStaleTimerRef.current = null;
-      }
-    };
-  }, [visibleSymbolsKey, buildWsUrl, applyPriceUpdates, initialLoadDone]);
-
-  // HTTP polling fallback when WebSocket is unavailable
-  useEffect(() => {
-    if (!usePolling || !initialLoadDone) {
-      if (pollingTimerRef.current) {
-        clearInterval(pollingTimerRef.current);
-        pollingTimerRef.current = null;
-      }
       return () => {};
     }
     const poll = async () => {
@@ -536,13 +430,7 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
         pollingTimerRef.current = null;
       }
     };
-  }, [usePolling, initialLoadDone, visibleSymbolsKey, applyPriceUpdates]);
-
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
+  }, [initialLoadDone, visibleSymbolsKey, applyPriceUpdates]);
 
   // When navigating for "All Stocks", update list after allStocks arrives
   useEffect(() => {

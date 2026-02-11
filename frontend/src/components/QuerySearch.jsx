@@ -13,16 +13,8 @@ const QuerySearch = () => {
   const [isLiveLoading, setIsLiveLoading] = useState(false);
   const [searchMode, setSearchMode] = useState("live"); // live | ai
   const [lastAiQuery, setLastAiQuery] = useState("");
-  const wsRef = useRef(null);
   const prevPricesRef = useRef({});
-  const wsReconnectTimerRef = useRef(null);
-  const isMountedRef = useRef(true);
-  const lastMessageAtRef = useRef(0);
-  const wsStaleTimerRef = useRef(null);
-  const wsFailedAttemptsRef = useRef(0);
-  const wsOpenedRef = useRef(false);
   const pollingTimerRef = useRef(null);
-  const [usePolling, setUsePolling] = useState(false);
   const visibleSymbolsKey = useMemo(() => (
     results
       .map((s) => s.symbol)
@@ -110,105 +102,8 @@ const QuerySearch = () => {
     prevPricesRef.current = prevPrices;
   }, []);
 
-  // WebSocket live updates for currently visible results
+  // HTTP-only live updates for currently visible results
   useEffect(() => {
-    const symbols = visibleSymbolsKey ? visibleSymbolsKey.split(",") : [];
-
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-    if (wsReconnectTimerRef.current) {
-      clearTimeout(wsReconnectTimerRef.current);
-      wsReconnectTimerRef.current = null;
-    }
-
-    if (!symbols.length) {
-      return () => {};
-    }
-
-    const connect = () => {
-      if (!isMountedRef.current) return;
-      const ws = new WebSocket(buildWsUrl());
-      wsRef.current = ws;
-      wsOpenedRef.current = false;
-
-      ws.onopen = () => {
-        wsOpenedRef.current = true;
-        wsFailedAttemptsRef.current = 0;
-        setUsePolling(false);
-        ws.send(JSON.stringify({ symbols }));
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const payload = JSON.parse(event.data);
-          const updates = Array.isArray(payload.stocks) ? payload.stocks : [];
-          applyPriceUpdates(updates);
-          lastMessageAtRef.current = Date.now();
-        } catch (err) {
-          console.error("WebSocket message error:", err);
-        }
-      };
-
-      ws.onerror = (err) => {
-        console.error("WebSocket error:", err);
-        try {
-          ws.close();
-        } catch {}
-      };
-      ws.onclose = () => {
-        if (!isMountedRef.current) return;
-        if (!wsOpenedRef.current) {
-          wsFailedAttemptsRef.current += 1;
-          if (wsFailedAttemptsRef.current >= 2) {
-            setUsePolling(true);
-            return;
-          }
-        }
-        wsReconnectTimerRef.current = setTimeout(connect, 2000);
-      };
-    };
-
-    connect();
-
-    if (wsStaleTimerRef.current) {
-      clearInterval(wsStaleTimerRef.current);
-    }
-    wsStaleTimerRef.current = setInterval(() => {
-      const lastMsg = lastMessageAtRef.current;
-      if (lastMsg && Date.now() - lastMsg > 12000) {
-        try {
-          wsRef.current?.close();
-        } catch {}
-      }
-    }, 5000);
-
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-        wsRef.current = null;
-      }
-      if (wsReconnectTimerRef.current) {
-        clearTimeout(wsReconnectTimerRef.current);
-        wsReconnectTimerRef.current = null;
-      }
-      if (wsStaleTimerRef.current) {
-        clearInterval(wsStaleTimerRef.current);
-        wsStaleTimerRef.current = null;
-      }
-    };
-  }, [visibleSymbolsKey, buildWsUrl, applyPriceUpdates]);
-
-  // HTTP polling fallback when WebSocket is unavailable
-  useEffect(() => {
-    if (!usePolling) {
-      if (pollingTimerRef.current) {
-        clearInterval(pollingTimerRef.current);
-        pollingTimerRef.current = null;
-      }
-      return () => {};
-    }
     const poll = async () => {
       try {
         const res = await api.get("/api/stocks");
@@ -228,13 +123,8 @@ const QuerySearch = () => {
         pollingTimerRef.current = null;
       }
     };
-  }, [usePolling, visibleSymbolsKey, applyPriceUpdates]);
+  }, [visibleSymbolsKey, applyPriceUpdates]);
 
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
 
   const runSearch = useCallback(async (queryText) => {
     const q = (queryText || "").trim();
