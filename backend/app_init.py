@@ -14,7 +14,6 @@ import os
 
 # Import optimization modules
 from utils.cache_manager import start_cache_cleanup_thread
-from utils.chart_prefetcher import start_chart_prefetcher
 from utils.price_updater import start_price_cache_updater
 from routes.optimized_routes import register_optimized_routes
 from utils.performance_utils import configure_logging, metrics
@@ -143,8 +142,6 @@ init_db()
 
 # Start cache cleanup thread
 start_cache_cleanup_thread(interval=60)
-# Start chart prefetcher for 1D cache
-start_chart_prefetcher(interval=180)
 # Start price cache updater (every 5 seconds)
 start_price_cache_updater(interval=5)
 

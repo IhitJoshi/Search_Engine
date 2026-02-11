@@ -13,7 +13,6 @@ import time
 import gzip
 import json
 import logging
-import threading
 from functools import wraps
 from flask import Blueprint, jsonify, request, Response, g
 from typing import Optional
@@ -172,7 +171,7 @@ def get_stock_detail_optimized(symbol: str):
     """
     try:
         include_chart = request.args.get('chart', 'false').lower() == 'true'
-        chart_period = request.args.get('period')
+        chart_period = request.args.get('period', '1D')
         
         symbol = symbol.upper()
         
@@ -191,29 +190,16 @@ def get_stock_detail_optimized(symbol: str):
         result = {'details': cached_stock}
         
         # Lazy load chart data only if requested
-        if include_chart and chart_period:
+        if include_chart:
             try:
                 chart_period = chart_period.upper()
                 cache_key_chart = f"chart:{symbol}:{chart_period}"
                 cached_chart = chart_cache.get(cache_key_chart)
                 
                 if not cached_chart:
-                    ttl_map = {
-                        "1D": 180,
-                        "5D": 300,
-                        "1M": 7200,
-                        "3M": 21600,
-                        "1Y": 43200
-                    }
-                    def _warm_chart():
-                        try:
-                            all_charts = fetch_chart_data_parallel(symbol, [chart_period])
-                            chart_data = all_charts.get(chart_period, [])
-                            chart_cache.set(cache_key_chart, chart_data, ttl=ttl_map.get(chart_period, 7200))
-                        except Exception as e:
-                            logger.error(f"Chart fetch error for {symbol} {chart_period}: {e}")
-                    threading.Thread(target=_warm_chart, daemon=True).start()
-                    result['pending'] = True
+                    all_charts = fetch_chart_data_parallel(symbol, [chart_period])
+                    cached_chart = all_charts.get(chart_period, [])
+                    chart_cache.set(cache_key_chart, cached_chart, ttl=300)
                 result['chart'] = cached_chart if cached_chart else []
             except Exception as e:
                 logger.error(f"Chart fetch error for {symbol} {chart_period}: {e}")
@@ -247,23 +233,12 @@ def get_chart_only(symbol: str):
         if cached_chart:
             return jsonify({'symbol': symbol, 'period': period, 'data': cached_chart}), 200
         
-        ttl_map = {
-            "1D": 180,
-            "5D": 300,
-            "1M": 7200,
-            "3M": 21600,
-            "1Y": 43200
-        }
-        def _warm_chart():
-            try:
-                all_charts = fetch_chart_data_parallel(symbol, [period])
-                chart_data = all_charts.get(period, [])
-                chart_cache.set(cache_key_chart, chart_data, ttl=ttl_map.get(period, 7200))
-            except Exception as e:
-                logger.error(f"Chart only fetch error for {symbol} {period}: {e}")
-        threading.Thread(target=_warm_chart, daemon=True).start()
+        all_charts = fetch_chart_data_parallel(symbol, [period])
+        chart_data = all_charts.get(period, [])
         
-        return jsonify({'symbol': symbol, 'period': period, 'data': [], 'pending': True}), 200
+        chart_cache.set(cache_key_chart, chart_data, ttl=300)
+        
+        return jsonify({'symbol': symbol, 'period': period, 'data': chart_data}), 200
     except Exception as e:
         logger.error(f"Chart only fetch error for {symbol} {period}: {e}")
         return jsonify({'symbol': symbol.upper() if symbol else 'N/A', 'period': 'N/A', 'data': []}), 200
@@ -287,8 +262,10 @@ def get_all_charts(symbol: str):
         if cached:
             return jsonify({'symbol': symbol, 'charts': cached}), 200
         
-        # Avoid fetching all periods at once; return cached-only set (may be empty)
-        return jsonify({'symbol': symbol, 'charts': {}}), 200
+        charts = fetch_chart_data_parallel(symbol)
+        chart_cache.set(cache_key_all, charts, ttl=300)
+        
+        return jsonify({'symbol': symbol, 'charts': charts}), 200
     except Exception as e:
         logger.error(f"All charts fetch error for {symbol}: {e}")
         return jsonify({'symbol': symbol.upper() if symbol else 'N/A', 'charts': {}}), 200

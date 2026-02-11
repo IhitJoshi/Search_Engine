@@ -10,8 +10,6 @@ const StockDetails = ({ symbol, onClose }) => {
   const [loading, setLoading] = useState(true);
   const [chartLoading, setChartLoading] = useState(true);
   const [range, setRange] = useState("1D");
-  const [chartCache, setChartCache] = useState({});
-  const retryRef = useRef({});
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
 
@@ -30,7 +28,6 @@ const StockDetails = ({ symbol, onClose }) => {
       }
     };
 
-    setChartCache({});
     setChartData([]);
     fetchDetails();
     return () => {
@@ -40,26 +37,6 @@ const StockDetails = ({ symbol, onClose }) => {
 
   // 🟡 Fetch Chart Data based on range
   useEffect(() => {
-    const cached = chartCache[range];
-    if (cached) {
-      setChartData(cached);
-      setChartLoading(false);
-      return;
-    }
-    try {
-      const lsKey = `chart_cache:${symbol}:${range}`;
-      const lsVal = localStorage.getItem(lsKey);
-      if (lsVal) {
-        const parsed = JSON.parse(lsVal);
-        if (Array.isArray(parsed) && parsed.length) {
-          setChartData(parsed);
-          setChartCache((prev) => ({ ...prev, [range]: parsed }));
-          setChartLoading(false);
-          return;
-        }
-      }
-    } catch {}
-
     const fetchChartData = async () => {
       setChartLoading(true);
       try {
@@ -67,16 +44,6 @@ const StockDetails = ({ symbol, onClose }) => {
         const data = res.data;
         if (data.chart) {
           setChartData(data.chart);
-          setChartCache((prev) => ({ ...prev, [range]: data.chart }));
-          try {
-            localStorage.setItem(`chart_cache:${symbol}:${range}`, JSON.stringify(data.chart));
-          } catch {}
-        }
-        if ((data.pending && (!data.chart || data.chart.length === 0)) && !retryRef.current[`${symbol}:${range}`]) {
-          retryRef.current[`${symbol}:${range}`] = true;
-          setTimeout(() => {
-            setChartCache((prev) => ({ ...prev }));
-          }, 2000);
         }
       } catch (err) {
         console.error("Chart fetch error:", err);
@@ -86,7 +53,7 @@ const StockDetails = ({ symbol, onClose }) => {
     };
 
     fetchChartData();
-  }, [symbol, range, chartCache]);
+  }, [symbol, range]);
 
   // 🧠 Draw Chart
   useEffect(() => {
