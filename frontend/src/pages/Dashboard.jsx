@@ -23,6 +23,10 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
   const wsRef = useRef(null);
   const prevPricesRef = useRef({});
   const lastUpdatedTimerRef = useRef(null);
+  const wsReconnectTimerRef = useRef(null);
+  const isMountedRef = useRef(true);
+  const lastMessageAtRef = useRef(0);
+  const wsStaleTimerRef = useRef(null);
   const visibleSymbolsKey = useMemo(() => (
     displayedStocks
       .map((s) => s.symbol)
@@ -135,49 +139,61 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
     }, 800);
   }, []);
 
-// Fetch stocks initially (category-aware)
-  useEffect(() => {
+  const fetchStocks = useCallback(async () => {
     let previousStocksCache = {};
+    try {
+      setIsLiveLoading(true);
+      const categoryType = getCategoryType(initialQuery);
+      const params = {};
+      if (sectorFilter) params.sector = sectorFilter;
+      if (stockLimit) params.limit = stockLimit;
 
-    const fetchStocks = async () => {
-      try {
-        setIsLiveLoading(true);
-        const categoryType = getCategoryType(initialQuery);
-        const params = {};
-        if (sectorFilter) params.sector = sectorFilter;
-        if (stockLimit) params.limit = stockLimit;
-
-        const res = await api.get("/api/stocks", { params });
-        let data = Array.isArray(res.data) ? res.data : [];
-        if (!sectorFilter && categoryType) {
-          data = applyCategoryFilter(data, categoryType);
-        }
-
-        setAllStocks(data);
-        previousStocksCache = Object.fromEntries(data.map((s) => [s.symbol, s]));
-        setPreviousStocks(previousStocksCache);
-        prevPricesRef.current = Object.fromEntries(data.map((s) => [s.symbol, { price: s.price }]));
-        setDisplayedStocks(data);
-        setStats({ total: data.length, time: 0, query: sectorFilter || initialQuery || "All Stocks" });
-        setLastUpdated(new Date().toLocaleTimeString());
-        setLastUpdatedPulse(true);
-        if (lastUpdatedTimerRef.current) {
-          clearTimeout(lastUpdatedTimerRef.current);
-        }
-        lastUpdatedTimerRef.current = setTimeout(() => {
-          setLastUpdatedPulse(false);
-        }, 800);
-      } catch (err) {
-        console.error("Error fetching stocks:", err);
-      } finally {
-        setIsLiveLoading(false);
-        if (!initialLoadDone) setInitialLoadDone(true);
+      const res = await api.get("/api/stocks", { params });
+      let data = Array.isArray(res.data) ? res.data : [];
+      if (!sectorFilter && categoryType) {
+        data = applyCategoryFilter(data, categoryType);
       }
-    };
 
+      setAllStocks(data);
+      previousStocksCache = Object.fromEntries(data.map((s) => [s.symbol, s]));
+      setPreviousStocks(previousStocksCache);
+      prevPricesRef.current = Object.fromEntries(data.map((s) => [s.symbol, { price: s.price }]));
+      setDisplayedStocks(data);
+      setStats({ total: data.length, time: 0, query: sectorFilter || initialQuery || "All Stocks" });
+      setLastUpdated(new Date().toLocaleTimeString());
+      setLastUpdatedPulse(true);
+      if (lastUpdatedTimerRef.current) {
+        clearTimeout(lastUpdatedTimerRef.current);
+      }
+      lastUpdatedTimerRef.current = setTimeout(() => {
+        setLastUpdatedPulse(false);
+      }, 800);
+    } catch (err) {
+      console.error("Error fetching stocks:", err);
+    } finally {
+      setIsLiveLoading(false);
+      if (!initialLoadDone) setInitialLoadDone(true);
+    }
+  }, [sectorFilter, stockLimit, initialQuery, getCategoryType, applyCategoryFilter, initialLoadDone]);
+
+  // Fetch stocks initially (category-aware)
+  useEffect(() => {
     fetchStocks();
     return () => {};
-  }, [sectorFilter, stockLimit, initialQuery, getCategoryType, applyCategoryFilter]);
+  }, [fetchStocks]);
+
+  // Auto refresh when tab becomes visible again
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        fetchStocks();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [fetchStocks]);
 
   // 🔍 Perform search - memoized to prevent infinite loops
   const performSearch = useCallback(async (overrideQuery) => {
@@ -387,39 +403,83 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
       wsRef.current.close();
       wsRef.current = null;
     }
+    if (wsReconnectTimerRef.current) {
+      clearTimeout(wsReconnectTimerRef.current);
+      wsReconnectTimerRef.current = null;
+    }
 
     if (!symbols.length) {
       return () => {};
     }
 
-    const ws = new WebSocket(buildWsUrl());
-    wsRef.current = ws;
+    const connect = () => {
+      if (!isMountedRef.current) return;
+      const ws = new WebSocket(buildWsUrl());
+      wsRef.current = ws;
 
-    ws.onopen = () => {
-      ws.send(JSON.stringify({ symbols }));
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ symbols }));
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          const updates = Array.isArray(payload.stocks) ? payload.stocks : [];
+          applyPriceUpdates(updates, payload.timestamp);
+          lastMessageAtRef.current = Date.now();
+        } catch (err) {
+          console.error("WebSocket message error:", err);
+        }
+      };
+
+      ws.onerror = (err) => {
+        console.error("WebSocket error:", err);
+        try {
+          ws.close();
+        } catch {}
+      };
+
+      ws.onclose = () => {
+        if (!isMountedRef.current) return;
+        wsReconnectTimerRef.current = setTimeout(connect, 2000);
+      };
     };
 
-    ws.onmessage = (event) => {
-      try {
-        const payload = JSON.parse(event.data);
-        const updates = Array.isArray(payload.stocks) ? payload.stocks : [];
-        applyPriceUpdates(updates, payload.timestamp);
-      } catch (err) {
-        console.error("WebSocket message error:", err);
+    connect();
+
+    if (wsStaleTimerRef.current) {
+      clearInterval(wsStaleTimerRef.current);
+    }
+    wsStaleTimerRef.current = setInterval(() => {
+      const lastMsg = lastMessageAtRef.current;
+      if (lastMsg && Date.now() - lastMsg > 12000) {
+        try {
+          wsRef.current?.close();
+        } catch {}
       }
-    };
-
-    ws.onerror = (err) => {
-      console.error("WebSocket error:", err);
-    };
+    }, 5000);
 
     return () => {
       if (wsRef.current) {
         wsRef.current.close();
         wsRef.current = null;
       }
+      if (wsReconnectTimerRef.current) {
+        clearTimeout(wsReconnectTimerRef.current);
+        wsReconnectTimerRef.current = null;
+      }
+      if (wsStaleTimerRef.current) {
+        clearInterval(wsStaleTimerRef.current);
+        wsStaleTimerRef.current = null;
+      }
     };
   }, [visibleSymbolsKey, buildWsUrl, applyPriceUpdates, initialLoadDone]);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // When navigating for "All Stocks", update list after allStocks arrives
   useEffect(() => {

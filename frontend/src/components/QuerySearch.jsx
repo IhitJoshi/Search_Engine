@@ -15,6 +15,10 @@ const QuerySearch = () => {
   const [lastAiQuery, setLastAiQuery] = useState("");
   const wsRef = useRef(null);
   const prevPricesRef = useRef({});
+  const wsReconnectTimerRef = useRef(null);
+  const isMountedRef = useRef(true);
+  const lastMessageAtRef = useRef(0);
+  const wsStaleTimerRef = useRef(null);
   const visibleSymbolsKey = useMemo(() => (
     results
       .map((s) => s.symbol)
@@ -32,29 +36,43 @@ const QuerySearch = () => {
     });
   }, [allStocks]);
 
+  const fetchStocks = useCallback(async () => {
+    let isMounted = true;
+    try {
+      setIsLiveLoading(true);
+      const res = await api.get("/api/stocks");
+      if (isMounted) {
+        setAllStocks(Array.isArray(res.data) ? res.data : []);
+        prevPricesRef.current = Object.fromEntries(
+          (Array.isArray(res.data) ? res.data : []).map((s) => [s.symbol, { price: s.price }])
+        );
+      }
+    } catch (err) {
+      console.error("Error fetching live stocks:", err);
+    } finally {
+      if (isMounted) setIsLiveLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
-    const fetchStocks = async () => {
-      try {
-        setIsLiveLoading(true);
-        const res = await api.get("/api/stocks");
-        if (isMounted) {
-          setAllStocks(Array.isArray(res.data) ? res.data : []);
-          prevPricesRef.current = Object.fromEntries(
-            (Array.isArray(res.data) ? res.data : []).map((s) => [s.symbol, { price: s.price }])
-          );
-        }
-      } catch (err) {
-        console.error("Error fetching live stocks:", err);
-      } finally {
-        if (isMounted) setIsLiveLoading(false);
-      }
-    };
     fetchStocks();
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [fetchStocks]);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        fetchStocks();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [fetchStocks]);
 
   const buildWsUrl = useCallback(() => {
     const base = import.meta.env.VITE_API_URL || window.location.origin;
@@ -96,39 +114,82 @@ const QuerySearch = () => {
       wsRef.current.close();
       wsRef.current = null;
     }
+    if (wsReconnectTimerRef.current) {
+      clearTimeout(wsReconnectTimerRef.current);
+      wsReconnectTimerRef.current = null;
+    }
 
     if (!symbols.length) {
       return () => {};
     }
 
-    const ws = new WebSocket(buildWsUrl());
-    wsRef.current = ws;
+    const connect = () => {
+      if (!isMountedRef.current) return;
+      const ws = new WebSocket(buildWsUrl());
+      wsRef.current = ws;
 
-    ws.onopen = () => {
-      ws.send(JSON.stringify({ symbols }));
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ symbols }));
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          const updates = Array.isArray(payload.stocks) ? payload.stocks : [];
+          applyPriceUpdates(updates);
+          lastMessageAtRef.current = Date.now();
+        } catch (err) {
+          console.error("WebSocket message error:", err);
+        }
+      };
+
+      ws.onerror = (err) => {
+        console.error("WebSocket error:", err);
+        try {
+          ws.close();
+        } catch {}
+      };
+      ws.onclose = () => {
+        if (!isMountedRef.current) return;
+        wsReconnectTimerRef.current = setTimeout(connect, 2000);
+      };
     };
 
-    ws.onmessage = (event) => {
-      try {
-        const payload = JSON.parse(event.data);
-        const updates = Array.isArray(payload.stocks) ? payload.stocks : [];
-        applyPriceUpdates(updates);
-      } catch (err) {
-        console.error("WebSocket message error:", err);
+    connect();
+
+    if (wsStaleTimerRef.current) {
+      clearInterval(wsStaleTimerRef.current);
+    }
+    wsStaleTimerRef.current = setInterval(() => {
+      const lastMsg = lastMessageAtRef.current;
+      if (lastMsg && Date.now() - lastMsg > 12000) {
+        try {
+          wsRef.current?.close();
+        } catch {}
       }
-    };
-
-    ws.onerror = (err) => {
-      console.error("WebSocket error:", err);
-    };
+    }, 5000);
 
     return () => {
       if (wsRef.current) {
         wsRef.current.close();
         wsRef.current = null;
       }
+      if (wsReconnectTimerRef.current) {
+        clearTimeout(wsReconnectTimerRef.current);
+        wsReconnectTimerRef.current = null;
+      }
+      if (wsStaleTimerRef.current) {
+        clearInterval(wsStaleTimerRef.current);
+        wsStaleTimerRef.current = null;
+      }
     };
   }, [visibleSymbolsKey, buildWsUrl, applyPriceUpdates]);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const runSearch = useCallback(async (queryText) => {
     const q = (queryText || "").trim();
