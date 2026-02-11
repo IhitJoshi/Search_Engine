@@ -74,7 +74,7 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
         const symbols = (data || []).map((s) => s.symbol).filter(Boolean);
         const newSymbols = symbols.filter((s) => !subscribedSymbolsRef.current.has(s));
         if (newSymbols.length > 0) {
-          subscribeSymbols(newSymbols, { interval: 10 });
+          subscribeSymbols(newSymbols, { interval: 5 });
           newSymbols.forEach((s) => subscribedSymbolsRef.current.add(s));
         }
       } catch (err) {
@@ -151,7 +151,7 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
 
     const handleConnect = () => {
       if (subscribedSymbolsRef.current.size > 0) {
-        subscribeSymbols(Array.from(subscribedSymbolsRef.current), { interval: 10 });
+        subscribeSymbols(Array.from(subscribedSymbolsRef.current), { interval: 5 });
       }
     };
 

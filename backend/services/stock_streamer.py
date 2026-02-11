@@ -11,7 +11,7 @@ from flask_socketio import SocketIO, join_room, leave_room
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_POLL_INTERVAL = int(os.environ.get("SOCKET_STOCK_POLL_INTERVAL", "10"))
+DEFAULT_POLL_INTERVAL = int(os.environ.get("SOCKET_STOCK_POLL_INTERVAL", "5"))
 MIN_POLL_INTERVAL = int(os.environ.get("SOCKET_STOCK_MIN_INTERVAL", "5"))
 MAX_POLL_INTERVAL = int(os.environ.get("SOCKET_STOCK_MAX_INTERVAL", "60"))
 DEFAULT_CACHE_TTL = int(os.environ.get("SOCKET_STOCK_CACHE_TTL", "5"))

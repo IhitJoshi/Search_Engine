@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import api from "../services/api";
+import { getStockSocket, subscribeSymbols, unsubscribeSymbols } from "../services/stockSocket";
 import StockCard from "./StockCard";
 import StockDetails from "./StockDetails"; // 👈 import your detailed modal
 
@@ -13,6 +14,8 @@ const QuerySearch = () => {
   const [isLiveLoading, setIsLiveLoading] = useState(false);
   const [searchMode, setSearchMode] = useState("live"); // live | ai
   const [lastAiQuery, setLastAiQuery] = useState("");
+  const subscribedSymbolsRef = useRef(new Set());
+  const changeTimersRef = useRef({});
 
   const filterLiveStocks = useCallback((queryText) => {
     const q = (queryText || "").toLowerCase().trim();
@@ -26,12 +29,21 @@ const QuerySearch = () => {
 
   useEffect(() => {
     let isMounted = true;
+    const socket = getStockSocket();
+
     const fetchStocks = async () => {
       try {
         setIsLiveLoading(true);
         const res = await api.get("/api/stocks");
-        if (isMounted) {
-          setAllStocks(Array.isArray(res.data) ? res.data : []);
+        if (!isMounted) return;
+        const data = Array.isArray(res.data) ? res.data : [];
+        setAllStocks(data.map((s) => ({ ...s, changed: null })));
+
+        const symbols = data.map((s) => s.symbol).filter(Boolean);
+        const newSymbols = symbols.filter((s) => !subscribedSymbolsRef.current.has(s));
+        if (newSymbols.length > 0) {
+          subscribeSymbols(newSymbols, { interval: 5 });
+          newSymbols.forEach((s) => subscribedSymbolsRef.current.add(s));
         }
       } catch (err) {
         console.error("Error fetching live stocks:", err);
@@ -39,11 +51,89 @@ const QuerySearch = () => {
         if (isMounted) setIsLiveLoading(false);
       }
     };
+
     fetchStocks();
-    const interval = setInterval(fetchStocks, 10000);
+
+    const clearChangeTimer = (symbol) => {
+      const timer = changeTimersRef.current[symbol];
+      if (timer) {
+        clearTimeout(timer);
+      }
+      changeTimersRef.current[symbol] = setTimeout(() => {
+        setAllStocks((prev) =>
+          prev.map((s) => (s.symbol === symbol ? { ...s, changed: null } : s))
+        );
+        setResults((prev) =>
+          prev.map((s) => (s.symbol === symbol ? { ...s, changed: null } : s))
+        );
+        delete changeTimersRef.current[symbol];
+      }, 1500);
+    };
+
+    const handleUpdate = (payload) => {
+      if (!payload?.symbol) return;
+      setAllStocks((prev) =>
+        prev.map((stock) => {
+          if (stock.symbol !== payload.symbol) return stock;
+          const prevPrice = stock.price;
+          const nextPrice = payload.price ?? stock.price;
+          let changed = null;
+          if (prevPrice != null && nextPrice != null && prevPrice !== nextPrice) {
+            changed = nextPrice > prevPrice ? "up" : "down";
+          }
+          if (changed) {
+            clearChangeTimer(stock.symbol);
+          }
+          return {
+            ...stock,
+            price: nextPrice,
+            change_percent: payload.change_percent ?? stock.change_percent,
+            last_updated: payload.last_updated ?? stock.last_updated,
+            changed,
+          };
+        })
+      );
+      setResults((prev) =>
+        prev.map((stock) => {
+          if (stock.symbol !== payload.symbol) return stock;
+          const prevPrice = stock.price;
+          const nextPrice = payload.price ?? stock.price;
+          let changed = null;
+          if (prevPrice != null && nextPrice != null && prevPrice !== nextPrice) {
+            changed = nextPrice > prevPrice ? "up" : "down";
+          }
+          if (changed) {
+            clearChangeTimer(stock.symbol);
+          }
+          return {
+            ...stock,
+            price: nextPrice,
+            change_percent: payload.change_percent ?? stock.change_percent,
+            last_updated: payload.last_updated ?? stock.last_updated,
+            changed,
+          };
+        })
+      );
+    };
+
+    const handleConnect = () => {
+      if (subscribedSymbolsRef.current.size > 0) {
+        subscribeSymbols(Array.from(subscribedSymbolsRef.current), { interval: 5 });
+      }
+    };
+
+    socket.on("stock_update", handleUpdate);
+    socket.on("connect", handleConnect);
+
     return () => {
       isMounted = false;
-      clearInterval(interval);
+      socket.off("stock_update", handleUpdate);
+      socket.off("connect", handleConnect);
+      if (subscribedSymbolsRef.current.size > 0) {
+        unsubscribeSymbols(Array.from(subscribedSymbolsRef.current));
+      }
+      Object.values(changeTimersRef.current).forEach(clearTimeout);
+      changeTimersRef.current = {};
     };
   }, []);
 

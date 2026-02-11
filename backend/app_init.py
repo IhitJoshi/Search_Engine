@@ -163,27 +163,33 @@ register_optimized_routes(app)
 # Register WebSocket handlers
 register_stock_streaming(socketio)
 
-# App startup: load dataset and build search index lazily before first request
-@app.before_request
-def initialize_app():
-    auth_paths = {"/api/login", "/api/signup", "/api/logout", "/api/auth/check", "/api/forgot-password"}
-    try:
-        if request.path in auth_paths or request.path.startswith("/static") or request.path.startswith("/api/v2"):
-            return
-    except Exception:
-        pass
-
-    if not hasattr(app, "_initialized"):
+# Legacy dataset/index initialization is disabled by default to avoid slowing
+# down login/stock endpoints. Enable only if you still use core.search.
+if os.environ.get("ENABLE_LEGACY_INDEX", "0") == "1":
+    @app.before_request
+    def initialize_app():
+        auth_paths = {
+            "/api/login", "/api/signup", "/api/logout",
+            "/api/auth/check", "/api/forgot-password",
+            "/api/stocks", "/api/health", "/api/info"
+        }
         try:
-            logger.info("Loading dataset and building search index...")
-            global df
-            df = load_dataset()
-            df = tokenize_all_columns(df)
-            search_engine.build_index(df)
-            logger.info("Application initialized successfully")
-            app._initialized = True
+            if request.path in auth_paths or request.path.startswith("/static") or request.path.startswith("/api/v2"):
+                return
         except Exception:
-            logger.exception("Failed to initialize application")
+            pass
+
+        if not hasattr(app, "_initialized"):
+            try:
+                logger.info("Loading dataset and building search index...")
+                global df
+                df = load_dataset()
+                df = tokenize_all_columns(df)
+                search_engine.build_index(df)
+                logger.info("Application initialized successfully")
+                app._initialized = True
+            except Exception:
+                logger.exception("Failed to initialize application")
 
 
 __all__ = ["app", "logger", "stock_app", "stock_ranker", "socketio"]
