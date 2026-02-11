@@ -19,6 +19,10 @@ const QuerySearch = () => {
   const isMountedRef = useRef(true);
   const lastMessageAtRef = useRef(0);
   const wsStaleTimerRef = useRef(null);
+  const wsFailedAttemptsRef = useRef(0);
+  const wsOpenedRef = useRef(false);
+  const pollingTimerRef = useRef(null);
+  const [usePolling, setUsePolling] = useState(false);
   const visibleSymbolsKey = useMemo(() => (
     results
       .map((s) => s.symbol)
@@ -127,8 +131,12 @@ const QuerySearch = () => {
       if (!isMountedRef.current) return;
       const ws = new WebSocket(buildWsUrl());
       wsRef.current = ws;
+      wsOpenedRef.current = false;
 
       ws.onopen = () => {
+        wsOpenedRef.current = true;
+        wsFailedAttemptsRef.current = 0;
+        setUsePolling(false);
         ws.send(JSON.stringify({ symbols }));
       };
 
@@ -151,6 +159,13 @@ const QuerySearch = () => {
       };
       ws.onclose = () => {
         if (!isMountedRef.current) return;
+        if (!wsOpenedRef.current) {
+          wsFailedAttemptsRef.current += 1;
+          if (wsFailedAttemptsRef.current >= 2) {
+            setUsePolling(true);
+            return;
+          }
+        }
         wsReconnectTimerRef.current = setTimeout(connect, 2000);
       };
     };
@@ -184,6 +199,36 @@ const QuerySearch = () => {
       }
     };
   }, [visibleSymbolsKey, buildWsUrl, applyPriceUpdates]);
+
+  // HTTP polling fallback when WebSocket is unavailable
+  useEffect(() => {
+    if (!usePolling) {
+      if (pollingTimerRef.current) {
+        clearInterval(pollingTimerRef.current);
+        pollingTimerRef.current = null;
+      }
+      return () => {};
+    }
+    const poll = async () => {
+      try {
+        const res = await api.get("/api/stocks");
+        const data = Array.isArray(res.data) ? res.data : [];
+        const visibleSet = new Set(visibleSymbolsKey ? visibleSymbolsKey.split(",") : []);
+        const updates = data.filter((s) => visibleSet.has(s.symbol));
+        applyPriceUpdates(updates);
+      } catch (err) {
+        console.error("Polling error:", err);
+      }
+    };
+    poll();
+    pollingTimerRef.current = setInterval(poll, 5000);
+    return () => {
+      if (pollingTimerRef.current) {
+        clearInterval(pollingTimerRef.current);
+        pollingTimerRef.current = null;
+      }
+    };
+  }, [usePolling, visibleSymbolsKey, applyPriceUpdates]);
 
   useEffect(() => {
     return () => {

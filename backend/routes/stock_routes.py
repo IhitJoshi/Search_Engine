@@ -1,4 +1,5 @@
 from flask import jsonify, request
+import threading
 from app_init import app, stock_app, logger
 from errors import APIError, require_auth
 from utils.preprocessing import normalize_sector
@@ -146,31 +147,34 @@ def get_stock_details(symbol):
                     "volume": None,
                 }
         
-        # Fetch chart data if not cached and range requested
+        pending_chart = False
+        # Fetch chart data if not cached and range requested (async)
         if range_param and not cached_chart:
-            try:
-                ttl_map = {
-                    "1D": 180,
-                    "5D": 300,
-                    "1M": 7200,
-                    "3M": 21600,
-                    "1Y": 43200
-                }
-                all_charts = fetch_chart_data_parallel(symbol, [range_param])
-                cached_chart = all_charts.get(range_param, [])
-                if cached_chart is None:
-                    cached_chart = []
-                ttl = ttl_map.get(range_param, 7200)
-                chart_cache.set(cache_key_chart, cached_chart, ttl=ttl)
-            except Exception as e:
-                logger.error(f"Chart data fetch failed for {symbol} {range_param}: {e}")
-                cached_chart = []
+            pending_chart = True
+            def _warm_chart():
+                try:
+                    ttl_map = {
+                        "1D": 180,
+                        "5D": 300,
+                        "1M": 7200,
+                        "3M": 21600,
+                        "1Y": 43200
+                    }
+                    all_charts = fetch_chart_data_parallel(symbol, [range_param])
+                    chart_data = all_charts.get(range_param, [])
+                    if chart_data is None:
+                        chart_data = []
+                    ttl = ttl_map.get(range_param, 7200)
+                    chart_cache.set(cache_key_chart, chart_data, ttl=ttl)
+                except Exception as e:
+                    logger.error(f"Chart data fetch failed for {symbol} {range_param}: {e}")
+            threading.Thread(target=_warm_chart, daemon=True).start()
         
         # Ensure chart is always a list
         if cached_chart is None:
             cached_chart = []
         
-        return jsonify({"details": cached_info, "chart": cached_chart}), 200
+        return jsonify({"details": cached_info, "chart": cached_chart, "pending": pending_chart}), 200
 
     except Exception as e:
         logger.exception(f"Stock details error for {symbol}: {e}")

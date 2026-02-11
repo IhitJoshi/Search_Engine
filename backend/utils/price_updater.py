@@ -9,8 +9,9 @@ import time
 import logging
 from datetime import datetime
 
-from utils.cache_manager import stock_cache
+from utils.cache_manager import stock_cache, tokenized_cache
 from utils.optimized_db import optimized_db
+from utils.stock_tokenizer import stock_tokenizer
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ def refresh_price_cache() -> int:
     stocks = optimized_db.get_latest_stocks()
     updated = 0
     now_iso = datetime.utcnow().isoformat() + "Z"
+    tokenized_snapshots = []
 
     for stock in stocks:
         symbol = (stock.get("symbol") or "").upper()
@@ -29,7 +31,14 @@ def refresh_price_cache() -> int:
             continue
         payload = {**stock, "cache_timestamp": now_iso}
         stock_cache.set(f"{PRICE_CACHE_PREFIX}:{symbol}", payload, ttl=20)
+        try:
+            tokens = stock_tokenizer.tokenize_stock(stock)
+            tokenized_snapshots.append({**stock, "tokens": tokens})
+        except Exception:
+            tokenized_snapshots.append({**stock, "tokens": []})
         updated += 1
+
+    tokenized_cache.set("tokenized_snapshots", tokenized_snapshots, ttl=30)
 
     return updated
 

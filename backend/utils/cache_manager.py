@@ -191,6 +191,7 @@ stock_cache = LRUCache(max_size=500, default_ttl=60)      # Stock data: 1 minute
 chart_cache = LRUCache(max_size=200, default_ttl=300)     # Chart data: 5 minutes  
 search_cache = LRUCache(max_size=1000, default_ttl=120)   # Search results: 2 minutes
 aggregation_cache = LRUCache(max_size=100, default_ttl=600)  # Aggregations: 10 minutes
+tokenized_cache = LRUCache(max_size=5, default_ttl=30)    # Tokenized snapshots: 30s
 
 
 def cache_key(*args, **kwargs) -> str:

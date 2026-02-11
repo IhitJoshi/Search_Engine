@@ -11,6 +11,7 @@ const StockDetails = ({ symbol, onClose }) => {
   const [chartLoading, setChartLoading] = useState(true);
   const [range, setRange] = useState("1D");
   const [chartCache, setChartCache] = useState({});
+  const retryRef = useRef({});
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
 
@@ -54,6 +55,12 @@ const StockDetails = ({ symbol, onClose }) => {
         if (data.chart) {
           setChartData(data.chart);
           setChartCache((prev) => ({ ...prev, [range]: data.chart }));
+        }
+        if ((data.pending && (!data.chart || data.chart.length === 0)) && !retryRef.current[`${symbol}:${range}`]) {
+          retryRef.current[`${symbol}:${range}`] = true;
+          setTimeout(() => {
+            setChartCache((prev) => ({ ...prev }));
+          }, 2000);
         }
       } catch (err) {
         console.error("Chart fetch error:", err);
