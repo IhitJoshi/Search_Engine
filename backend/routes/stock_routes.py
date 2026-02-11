@@ -2,7 +2,6 @@ from flask import jsonify, request
 from app_init import app, stock_app, logger
 from errors import APIError, require_auth
 from utils.preprocessing import normalize_sector
-import yfinance as yf
 import pandas as pd
 
 # Import optimization modules
@@ -111,24 +110,30 @@ def get_stock_details(symbol):
         cache_key_info = f"stock_info:{symbol}"
         cached_info = stock_cache.get(cache_key_info)
         
-        # Fetch stock info if not cached
+        # Fetch stock info if not cached (prefer DB/cache; avoid yfinance on click)
         if not cached_info:
             try:
-                stock = yf.Ticker(symbol)
-                info = {}
-                try:
-                    info = stock.info
-                except Exception:
-                    logger.exception("Failed fetching stock.info")
-                
-                cached_info = {
-                    "symbol": symbol,
-                    "name": info.get("longName", symbol),
-                    "sector": info.get("sector", "N/A"),
-                    "currentPrice": info.get("currentPrice", None),
-                    "marketCap": info.get("marketCap", None),
-                    "volume": info.get("volume", None),
-                }
+                db_row = optimized_db.get_stocks_batch([symbol]).get(symbol)
+                if db_row:
+                    cached_info = {
+                        "symbol": symbol,
+                        "name": db_row.get("company_name", symbol),
+                        "sector": db_row.get("sector", "N/A"),
+                        "currentPrice": db_row.get("price", None),
+                        "marketCap": db_row.get("market_cap", None),
+                        "volume": db_row.get("volume", None),
+                        "change_percent": db_row.get("change_percent", None),
+                        "last_updated": db_row.get("last_updated", None),
+                    }
+                else:
+                    cached_info = {
+                        "symbol": symbol,
+                        "name": symbol,
+                        "sector": "N/A",
+                        "currentPrice": None,
+                        "marketCap": None,
+                        "volume": None,
+                    }
                 stock_cache.set(cache_key_info, cached_info, ttl=60)
             except Exception as e:
                 logger.error(f"Stock info fetch failed for {symbol}: {e}")
