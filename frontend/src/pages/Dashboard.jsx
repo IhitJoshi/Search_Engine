@@ -20,7 +20,6 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
   const prevPropsRef = useRef({ initialQuery: "", sectorFilter: "", stockLimit: null });
   const subscribedSymbolsRef = useRef(new Set());
   const changeTimersRef = useRef({});
-  const lastSubscribeRef = useRef(new Set());
   const normalizeResults = useCallback((results = []) => {
     if (!Array.isArray(results)) return [];
     return results.map((r) => {
@@ -73,8 +72,7 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
         setLastUpdated(new Date().toLocaleTimeString());
 
         const symbols = (data || []).map((s) => s.symbol).filter(Boolean);
-        const limitedSymbols = symbols.slice(0, 15);
-        const newSymbols = limitedSymbols.filter((s) => !subscribedSymbolsRef.current.has(s));
+        const newSymbols = symbols.filter((s) => !subscribedSymbolsRef.current.has(s));
         if (newSymbols.length > 0) {
           subscribeSymbols(newSymbols, { interval: 5 });
           newSymbols.forEach((s) => subscribedSymbolsRef.current.add(s));
@@ -164,8 +162,8 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
       isMounted = false;
       socket.off("stock_update", handleUpdate);
       socket.off("connect", handleConnect);
-      if (lastSubscribeRef.current.size > 0) {
-        unsubscribeSymbols(Array.from(lastSubscribeRef.current));
+      if (subscribedSymbolsRef.current.size > 0) {
+        unsubscribeSymbols(Array.from(subscribedSymbolsRef.current));
       }
       Object.values(changeTimersRef.current).forEach(clearTimeout);
       changeTimersRef.current = {};
@@ -357,27 +355,6 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
 
     if (!query) return;
   }, [searchQuery, sectorFilter, stockLimit, allStocks, filterLiveStocks]);
-
-  // Subscribe only to visible stocks (max 15) after render
-  useEffect(() => {
-    const symbols = (displayedStocks || []).map((s) => s.symbol).filter(Boolean).slice(0, 15);
-    const nextSet = new Set(symbols);
-    const prevSet = lastSubscribeRef.current;
-
-    const toUnsub = Array.from(prevSet).filter((s) => !nextSet.has(s));
-    const toSub = Array.from(nextSet).filter((s) => !prevSet.has(s));
-
-    if (toUnsub.length > 0) {
-      unsubscribeSymbols(toUnsub);
-      toUnsub.forEach((s) => subscribedSymbolsRef.current.delete(s));
-    }
-    if (toSub.length > 0) {
-      subscribeSymbols(toSub, { interval: 5 });
-      toSub.forEach((s) => subscribedSymbolsRef.current.add(s));
-    }
-
-    lastSubscribeRef.current = nextSet;
-  }, [displayedStocks]);
 
   // When navigating for "All Stocks", update list after allStocks arrives
   useEffect(() => {

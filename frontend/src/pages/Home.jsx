@@ -12,7 +12,6 @@ const Home = ({ username, onLogout, onNavigateToSearch }) => {
   const navigate = useNavigate();
   const subscribedSymbolsRef = useRef(new Set());
   const changeTimersRef = useRef({});
-  const lastSubscribeRef = useRef(new Set());
 
   
 // Categories for the boxes - matching actual database sectors
@@ -98,7 +97,7 @@ const categories = [
         const data = Array.isArray(res.data) ? res.data : [];
         setStocks(data.map((s) => ({ ...s, changed: null })));
 
-        const symbols = data.map((s) => s.symbol).filter(Boolean).slice(0, 15);
+        const symbols = data.map((s) => s.symbol).filter(Boolean);
         const newSymbols = symbols.filter((s) => !subscribedSymbolsRef.current.has(s));
         if (newSymbols.length > 0) {
           subscribeSymbols(newSymbols, { interval: 5 });
@@ -162,8 +161,8 @@ const categories = [
       isMounted = false;
       socket.off("stock_update", handleUpdate);
       socket.off("connect", handleConnect);
-      if (lastSubscribeRef.current.size > 0) {
-        unsubscribeSymbols(Array.from(lastSubscribeRef.current));
+      if (subscribedSymbolsRef.current.size > 0) {
+        unsubscribeSymbols(Array.from(subscribedSymbolsRef.current));
       }
       Object.values(changeTimersRef.current).forEach(clearTimeout);
       changeTimersRef.current = {};
@@ -197,27 +196,6 @@ const categories = [
       navigate('/login'); // FIXED: Added navigation
     }
   };
-
-  // Subscribe only to visible ticker stocks (max 15)
-  useEffect(() => {
-    const symbols = (stocks || []).map((s) => s.symbol).filter(Boolean).slice(0, 15);
-    const nextSet = new Set(symbols);
-    const prevSet = lastSubscribeRef.current;
-
-    const toUnsub = Array.from(prevSet).filter((s) => !nextSet.has(s));
-    const toSub = Array.from(nextSet).filter((s) => !prevSet.has(s));
-
-    if (toUnsub.length > 0) {
-      unsubscribeSymbols(toUnsub);
-      toUnsub.forEach((s) => subscribedSymbolsRef.current.delete(s));
-    }
-    if (toSub.length > 0) {
-      subscribeSymbols(toSub, { interval: 5 });
-      toSub.forEach((s) => subscribedSymbolsRef.current.add(s));
-    }
-
-    lastSubscribeRef.current = nextSet;
-  }, [stocks]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-black overflow-hidden relative">
