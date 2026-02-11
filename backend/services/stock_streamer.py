@@ -133,13 +133,13 @@ class StockStreamManager:
 
                 data = self._get_cached_or_fetch(symbol)
                 if data:
-                    # Emit every interval so the frontend can update timestamps
-                    # and show "real-time" activity even if price is unchanged.
-                    self.socketio.emit("stock_update", data, room=symbol)
-                    self._last_sent[symbol] = {
-                        "price": data.get("price"),
-                        "change_percent": data.get("change_percent")
-                    }
+                    last = self._last_sent.get(symbol)
+                    if not last or last.get("price") != data.get("price") or last.get("change_percent") != data.get("change_percent"):
+                        self.socketio.emit("stock_update", data, room=symbol)
+                        self._last_sent[symbol] = {
+                            "price": data.get("price"),
+                            "change_percent": data.get("change_percent")
+                        }
                 self.socketio.sleep(interval)
         finally:
             with self._lock:
