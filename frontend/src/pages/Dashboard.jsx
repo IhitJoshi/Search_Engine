@@ -17,6 +17,7 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
   const [lastUpdatedPulse, setLastUpdatedPulse] = useState(false);
   const [selectedStock, setSelectedStock] = useState(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const navigate = useNavigate();
   const prevPropsRef = useRef({ initialQuery: "", sectorFilter: "", stockLimit: null });
   const wsRef = useRef(null);
@@ -170,6 +171,7 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
         console.error("Error fetching stocks:", err);
       } finally {
         setIsLiveLoading(false);
+        if (!initialLoadDone) setInitialLoadDone(true);
       }
     };
 
@@ -329,7 +331,9 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
       } else if (sectorFilter) {
         // For sector pages, don't call backend search; live data effects will populate
         // Show a loading message while waiting for live data
-        setDisplayedStocks([]);
+        if (!allStocks.length) {
+          setDisplayedStocks([]);
+        }
         setStats({ total: 0, time: 0, query: sectorFilter });
         setMessage({ text: "Loading sector data...", type: "info" });
       } else if (!initialQuery && !sectorFilter && allStocks.length > 0) {
@@ -374,6 +378,9 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
 
   // WebSocket live updates for currently visible stocks
   useEffect(() => {
+    if (!initialLoadDone) {
+      return () => {};
+    }
     const symbols = visibleSymbolsKey ? visibleSymbolsKey.split(",") : [];
 
     if (wsRef.current) {
@@ -412,7 +419,7 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
         wsRef.current = null;
       }
     };
-  }, [visibleSymbolsKey, buildWsUrl, applyPriceUpdates]);
+  }, [visibleSymbolsKey, buildWsUrl, applyPriceUpdates, initialLoadDone]);
 
   // When navigating for "All Stocks", update list after allStocks arrives
   useEffect(() => {
