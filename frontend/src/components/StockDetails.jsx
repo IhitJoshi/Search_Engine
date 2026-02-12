@@ -30,9 +30,6 @@ const StockDetails = ({ symbol, onClose }) => {
 
     setChartData([]);
     fetchDetails();
-    return () => {
-      if (chartInstance.current) chartInstance.current.destroy();
-    };
   }, [symbol]);
 
   // 🟡 Fetch Chart Data based on range
@@ -55,11 +52,15 @@ const StockDetails = ({ symbol, onClose }) => {
     fetchChartData();
   }, [symbol, range]);
 
-  // 🧠 Draw Chart
+  // 🧠 Draw Chart - only when chartData changes, properly cleanup previous chart
   useEffect(() => {
     if (!chartData.length || !chartRef.current) return;
 
-    if (chartInstance.current) chartInstance.current.destroy();
+    // Cleanup previous chart instance
+    if (chartInstance.current) {
+      chartInstance.current.destroy();
+      chartInstance.current = null;
+    }
 
     const ctx = chartRef.current.getContext("2d");
     const isPositive = chartData[chartData.length - 1]?.price >= chartData[0]?.price;
@@ -153,7 +154,14 @@ const StockDetails = ({ symbol, onClose }) => {
         }
       },
     });
-  }, [chartData, symbol, range]);
+
+    return () => {
+      if (chartInstance.current) {
+        chartInstance.current.destroy();
+        chartInstance.current = null;
+      }
+    };
+  }, [chartData]);
 
   if (loading)
     return (

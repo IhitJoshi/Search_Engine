@@ -1,30 +1,51 @@
-# ---- Python / Flask ----
+# ========================================
+# Python / Flask / Backend
+# ========================================
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.log
-*.sqlite3
-*.db
-*.pkl
-*.pid
-*.csv
-*.log
 instance/
-.env
+
+# Virtual environments
 venv/
+.env/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment variables (IMPORTANT - contains secrets!)
+.env
 .env.*
-.DS_Store
+backend/.env
+backend/.env.local
+backend/.env.production
+
+# SQLite databases (local development only)
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-shm
+*.db-wal
+stocks.db*
+users.db*
+stock_search.db*
+
+# Python compiled files & cache
+*.pkl
+*.pickle
+
+# CSV data files (regenerated from DB)
+backend/data/*.csv
 
 # Byte-compiled / cache
 *.py[cod]
 *$py.class
-
-# Virtual environments
-.env/
-.venv/
-env/
-venv.bak/
+*.so
+.Python
 
 # Distribution / packaging
 build/
@@ -41,48 +62,84 @@ var/
 *.egg-info/
 .installed.cfg
 
-# ---- Logs ----
+# Backend logs
 *.log
 logs/
+backend/logs/
 *.bak
-*.tmp
 
-# ---- Flask specific ----
-app.log
-*.db-journal
-
-# ---- Frontend (React) ----
+# ========================================
+# Frontend (React/Node.js)
+# ========================================
+# Dependencies
+node_modules/
 frontend/node_modules/
+package-lock.json
+yarn.lock
+
+# Build outputs
+frontend/dist/
+frontend/.vite/
 frontend/build/
-frontend/.env
-frontend/.env.local
-frontend/.env.development
-frontend/.env.production
-frontend/.env.test
 
-# ---- VSCode ----
+# Frontend logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ========================================
+# IDE & Editor
+# ========================================
 .vscode/
+.idea/
 *.code-workspace
-
-# ---- System / OS ----
-Thumbs.db
-.DS_Store
-Icon?
-ehthumbs.db
-Desktop.ini
-
-# ---- Misc ----
+*.sublime-project
+*.sublime-workspace
 *.swp
 *.swo
-*.bak
-*.tmp
+
+# ========================================
+# System / OS Files
+# ========================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+.AppleDB
+.AppleDesktop
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+*.stackdump
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ========================================
+# Miscellaneous
+# ========================================
 *.orig
 *.out
+*.pid
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+.venv_backup/
 
-# Logs
-*.log
-
-# SQLite
-*.db
-*.db-shm
-*.db-wal
+# ========================================
+# Keep these files in Git
+# ========================================
+!.gitignore
+!.env.example
+!backend/.env.example

@@ -18,11 +18,14 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
   const [selectedStock, setSelectedStock] = useState(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const [simulatedStocks, setSimulatedStocks] = useState({});
   const navigate = useNavigate();
   const prevPropsRef = useRef({ initialQuery: "", sectorFilter: "", stockLimit: null });
   const prevPricesRef = useRef({});
   const lastUpdatedTimerRef = useRef(null);
   const pollingTimerRef = useRef(null);
+  const simulationTimerRef = useRef(null);
+  const lastRealPriceRef = useRef({});
   const visibleSymbolsKey = useMemo(() => (
     displayedStocks
       .map((s) => s.symbol)
@@ -121,6 +124,7 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
         changed = update.price > prevPrice ? "up" : "down";
       }
       prevPrices[stock.symbol] = { price: update.price };
+      lastRealPriceRef.current[stock.symbol] = update.price;
       const nextUpdated = update?.timestamp || timestamp || stock.last_updated;
       return { ...stock, ...update, last_updated: nextUpdated, changed };
     });
@@ -432,6 +436,55 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
     };
   }, [initialLoadDone, visibleSymbolsKey, applyPriceUpdates]);
 
+  // 🎬 Smooth price simulation (every 2.5s - simulates between real updates)
+  useEffect(() => {
+    if (!initialLoadDone || displayedStocks.length === 0) return;
+
+    const simulatePrices = () => {
+      setDisplayedStocks((prevStocks) => {
+        return prevStocks.map((stock) => {
+          const realPrice = lastRealPriceRef.current[stock.symbol] ?? stock.price;
+          const currentDisplayed = simulatedStocks[stock.symbol]?.price ?? stock.price;
+          
+          // If price hasn't been set in simulation yet, initialize it
+          if (!simulatedStocks[stock.symbol]) {
+            lastRealPriceRef.current[stock.symbol] = stock.price;
+            return stock;
+          }
+
+          // If we're already close to real price (within $0.01), jump to it
+          const diff = Math.abs(realPrice - currentDisplayed);
+          if (diff < 0.01) {
+            return { ...stock, price: realPrice };
+          }
+
+          // Smooth transition: move 30% of the way closer to real price
+          const newPrice = currentDisplayed + (realPrice - currentDisplayed) * 0.3;
+          
+          // Add small micro-fluctuations (+/- 0.15% random) for realism
+          const microFluctuation = realPrice * (Math.random() - 0.5) * 0.003;
+          const finalPrice = newPrice + microFluctuation;
+
+          const updated = { ...stock, price: finalPrice };
+          setSimulatedStocks((prev) => ({
+            ...prev,
+            [stock.symbol]: { price: finalPrice },
+          }));
+
+          return updated;
+        });
+      });
+    };
+
+    simulationTimerRef.current = setInterval(simulatePrices, 2500);
+    return () => {
+      if (simulationTimerRef.current) {
+        clearInterval(simulationTimerRef.current);
+        simulationTimerRef.current = null;
+      }
+    };
+  }, [initialLoadDone, displayedStocks.length, simulatedStocks]);
+
   // When navigating for "All Stocks", update list after allStocks arrives
   useEffect(() => {
     if (!initialQuery && !sectorFilter && allStocks.length > 0) {
@@ -459,6 +512,15 @@ const Dashboard = ({ username, onLogout, initialQuery = "", sectorFilter = "", s
       }
     }
   }, [allStocks, sectorFilter, stockLimit, searchQuery]);
+
+  // Cleanup all timers on unmount
+  useEffect(() => {
+    return () => {
+      if (lastUpdatedTimerRef.current) clearTimeout(lastUpdatedTimerRef.current);
+      if (pollingTimerRef.current) clearInterval(pollingTimerRef.current);
+      if (simulationTimerRef.current) clearInterval(simulationTimerRef.current);
+    };
+  }, []);
 
   const handleLogoutClick = async () => {
     try {

@@ -40,3 +40,29 @@ services:
       
       - key: FLASK_SECRET_KEY
         scope: build
+  
+  # Cron Job - Auto-update stock prices every 1 minute
+  - type: cron
+    name: stock-price-updater
+    runtime: python
+    plan: free
+    schedule: "*/1 * * * *"  # Every 1 minute
+    
+    # Build command - install dependencies
+    buildCommand: |
+      cd backend && \
+      pip install --upgrade pip setuptools && \
+      pip install -r requirements.txt
+    
+    # Run the stock updater script
+    startCommand: |
+      cd backend && \
+      python update_stocks_cron.py
+    
+    # Root directory
+    rootDir: .
+    
+    # Environment variables (same as web service)
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
