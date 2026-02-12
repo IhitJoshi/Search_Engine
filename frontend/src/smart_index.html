@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock Dashboard - Smart Refresh</title>
+  <link rel="stylesheet" href="smart_style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-content">
+        <h1>📈 Stock Dashboard</h1>
+        <p>Smart On-Demand Refresh • Real-Time Simulation</p>
+      </div>
+      <div class="header-meta">
+        <span id="lastRefresh" class="meta-item">⏱️ Last Refresh: —</span>
+        <span id="dataFreshness" class="meta-item">🟢 Data Fresh</span>
+        <span id="simulationStatus" class="meta-item">🎬 Simulation Active</span>
+      </div>
+    </header>
+
+    <!-- Controls -->
+    <div class="controls">
+      <input 
+        type="text" 
+        id="searchInput" 
+        placeholder="🔍 Search stocks (e.g., AAPL, Microsoft)..." 
+        class="search-input"
+      >
+      <button id="refreshBtn" class="btn btn-primary">🔄 Force Refresh</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat-card">
+        <label>Stocks Loaded</label>
+        <span id="stockCount" class="stat-value">0</span>
+      </div>
+      <div class="stat-card">
+        <label>Polling Interval</label>
+        <span class="stat-value">5s</span>
+      </div>
+      <div class="stat-card">
+        <label>Simulation Interval</label>
+        <span class="stat-value">2.5s</span>
+      </div>
+      <div class="stat-card">
+        <label>Refresh Threshold</label>
+        <span class="stat-value">30s</span>
+      </div>
+    </div>
+
+    <!-- Stock Grid -->
+    <div class="stocks-grid" id="stocksGrid">
+      <div class="loading">Loading stocks...</div>
+    </div>
+
+    <!-- Stock Detail Modal -->
+    <div id="detailModal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="modalTitle">Stock Details</h2>
+          <button class="close-btn" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="stock-info">
+            <div class="info-item">
+              <label>Current Price</label>
+              <span id="modalPrice" class="price">$0.00</span>
+            </div>
+            <div class="info-item">
+              <label>Change</label>
+              <span id="modalChange" class="change">0.00%</span>
+            </div>
+            <div class="info-item">
+              <label>Volume</label>
+              <span id="modalVolume">0</span>
+            </div>
+            <div class="info-item">
+              <label>Last Updated</label>
+              <span id="modalUpdated">—</span>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="stockChart"></canvas>
+          </div>
+          <div class="chart-legend">
+            <p>📊 Chart updates every 2-3 seconds</p>
+            <p>💫 Prices smoothly transition between backend updates</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="smart_script.js"></script>
+</body>
+</html>

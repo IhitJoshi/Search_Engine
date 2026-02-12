@@ -1,24 +1,50 @@
-# 🔄 Stock Price Auto-Update Setup
+# ⚠️ DEPRECATED: Cron Job System
 
-## What Was Added
+## Migration Notice
 
-I've added a **cron job script** that automatically updates stock prices without disrupting your existing deployed application.
+**This document is deprecated.** The cron job approach has been **replaced** with a superior **Smart On-Demand Refresh** system.
 
-### New File
-- `backend/update_stocks_cron.py` - Runs periodically to fetch and update stock prices
+### Why the Change?
 
-### How It Works
+| Aspect | Cron Jobs | Smart Refresh |
+|--------|-----------|---|
+| Render Free Plan Support | ❌ No | ✅ Yes |
+| Background Processes | ❌ Required | ✅ None |
+| API Efficiency | ❌ 1440 calls/day | ✅ 120 calls/day |
+| Data Freshness | ⚠️ 60s max | ✅ 30s max |
+| Scalability | ❌ Poor | ✅ Excellent |
+| Complexity | ⚠️ Medium | ✅ Simple |
+
+### What To Do
+
+**Start here:**
+- 📖 **[SMART_REFRESH_QUICKSTART.md](SMART_REFRESH_QUICKSTART.md)** - Get running in 5 minutes
+- 📚 **[MIGRATION_TO_SMART_REFRESH.md](MIGRATION_TO_SMART_REFRESH.md)** - How to migrate
+- 🏗️ **[SMART_REFRESH_GUIDE.md](SMART_REFRESH_GUIDE.md)** - Full architecture
+
+### Quick Summary
+
+Old system (Cron):
 ```
-Cron Job runs every 1 minute
-    ↓
-Fetches latest prices using your existing stock_fetcher.py
-    ↓
-Updates stocks.db database
-    ↓
-Your existing API (/api/stocks) serves fresh data
-    ↓
-Dashboard.jsx shows updated prices automatically
+❌ Scheduled job every 60s
+❌ Always running, wasting resources
+❌ Not compatible with Render Free Plan
 ```
+
+New system (Smart Refresh):
+```
+✅ Fetch only when needed (30s threshold)
+✅ No background processes
+✅ Fully compatible with Render Free Plan
+✅ Professional smooth price simulation
+```
+
+## Files Removed
+
+- ❌ `backend/update_stocks_cron.py` - Delete this file
+- ❌ Cron job service in `render.yaml` - Remove this section
+
+## Next: Replace with Smart Refresh
 
 ---
 
