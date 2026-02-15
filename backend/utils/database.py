@@ -33,26 +33,36 @@ def init_db():
         cols_info = cursor.fetchall()
         columns = [col[1] for col in cols_info]
 
-        # Ensure google_id column exists
-        if 'google_id' not in columns:
-            try:
-                cursor.execute("ALTER TABLE users ADD COLUMN google_id TEXT UNIQUE")
-                logger.info("Added google_id column to users table")
-            except Exception as e:
-                logger.warning(f"google_id column may already exist: {e}")
-
-        # Detect legacy NOT NULL constraint on password_hash (breaks OAuth-only users)
+        # Detect legacy NOT NULL constraint on password_hash OR missing google_id
+        needs_migration = False
+        
+        # Check password constraint
         password_notnull = any(
             col[1] == 'password_hash' and col[3] == 1  # col[3] is notnull flag
             for col in cols_info
         )
+        
+        # Check google_id presence
+        missing_google_id = 'google_id' not in columns
 
-        if password_notnull:
-            logger.info("Migrating users table to allow NULL password_hash for OAuth-only users")
+        if password_notnull or missing_google_id:
+            logger.info(f"Database migration needed. Password notnull: {password_notnull}, Missing google_id: {missing_google_id}")
             try:
                 cursor.execute("BEGIN TRANSACTION")
 
-                # Create new table with desired nullable password_hash
+                # Create new table with desired schema
+                cursor.execute("""
+                CREATE TABLE IF NOT EXISTS users_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE,
+                    email TEXT UNIQUE NOT NULL,
+                    password_hash TEXT,
+                    google_id TEXT UNIQUE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+                """) # Use IF NOT EXISTS to be safe, though users_new shouldn't exist ideally.
+                # Actually, drop users_new if exists to be clean
+                cursor.execute("DROP TABLE IF EXISTS users_new")
                 cursor.execute("""
                 CREATE TABLE users_new (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,21 +74,33 @@ def init_db():
                 )
                 """)
 
-                # Copy data from old table
-                cursor.execute("""
-                    INSERT INTO users_new (id, username, email, password_hash, google_id, created_at)
-                    SELECT id, username, email, password_hash, google_id, created_at FROM users
-                """)
+                # Construct SELECT query based on available columns
+                select_cols = ["id", "username", "email", "password_hash", "created_at"]
+                
+                # Handle google_id specifically
+                if missing_google_id:
+                    google_id_select = "NULL as google_id"
+                else:
+                    google_id_select = "google_id"
+
+                query = f"""
+                    INSERT INTO users_new (id, username, email, password_hash, created_at, google_id)
+                    SELECT {', '.join(select_cols)}, {google_id_select} FROM users
+                """
+                
+                cursor.execute(query)
 
                 # Replace old table
                 cursor.execute("DROP TABLE users")
                 cursor.execute("ALTER TABLE users_new RENAME TO users")
 
                 cursor.execute("COMMIT")
-                logger.info("Successfully migrated users table to nullable password_hash")
+                logger.info("Successfully migrated users table")
             except Exception as e:
                 cursor.execute("ROLLBACK")
-                logger.exception(f"Failed to migrate users table for nullable password_hash: {e}")
+                logger.exception(f"Failed to migrate users table: {e}")
+
+        conn.commit()
 
         conn.commit()
     logger.info("Database initialized successfully")
