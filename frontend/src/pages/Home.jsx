@@ -281,8 +281,8 @@ const categories = [
             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
             <span className="text-sm font-medium text-cyan-400">LIVE MARKET DATA</span>
           </div>
-          <h2 className="welcome-message text-5xl font-bold mb-4 bg-gradient-to-r from-gray-100 via-cyan-100 to-gray-100 bg-clip-text text-transparent">
-            Welcome back, {username}!
+          <h2 className="text-5xl font-bold mb-4 bg-gradient-to-r from-gray-100 via-cyan-100 to-gray-100 bg-clip-text text-transparent">
+            Welcome back, <span className="welcome-message">{username}</span>!
           </h2>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto">
             Access real-time market data, advanced analytics, and professional trading tools
