@@ -33,7 +33,6 @@ configure_logging(
     json_format=False
 )
 logger = logging.getLogger(__name__)
-
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "supersecretkey_change_in_production")
 app.config['SESSION_COOKIE_HTTPONLY'] = True
@@ -107,7 +106,6 @@ stock_ranker = create_ranker(
     k1=1.5,
     b=0.75
 )
-
 # Background initialization and fetcher
 def run_background_fetcher():
     all_stocks = [

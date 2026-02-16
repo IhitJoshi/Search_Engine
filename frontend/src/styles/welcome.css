@@ -1,0 +1,8 @@
+.welcome-message {
+  min-height: 3.5em;
+  line-height: 1.2;
+  padding-bottom: 0.2em;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  display: inline-block;
+}
