@@ -1,7 +1,5 @@
 .welcome-message {
-  line-height: 1.35;
-  padding-bottom: 0.35em;
+  line-height: 1.15;
   word-break: break-word;
   overflow-wrap: anywhere;
-  vertical-align: bottom;
 }
